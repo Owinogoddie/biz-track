@@ -1,5 +1,6 @@
+'use client'
+import { AuthButton } from "@/components/auth/auth-button";
 // components/Navbar.tsx
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -40,8 +41,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-4">
-              <Button variant="outline">Log in</Button>
-              <Button>Sign up</Button>
+            <AuthButton />
             </div>
 
             {/* Mobile Menu */}
@@ -63,8 +63,7 @@ export default function Navbar() {
                     </Link>
                   ))}
                   <div className="flex flex-col space-y-4 pt-4 border-t">
-                    <Button variant="outline">Log in</Button>
-                    <Button>Sign up</Button>
+                  <AuthButton />
                   </div>
                 </div>
               </SheetContent>

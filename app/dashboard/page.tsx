@@ -2,12 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Overview } from "./components/overview"
 import { RecentSales } from "./components/recent-sales"
+import { AuthButton } from "@/components/auth/auth-button"
 
 export default function DashboardPage() {
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <AuthButton />
       </div>
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
