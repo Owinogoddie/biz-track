@@ -42,6 +42,7 @@ const reviews = [
   },
 ];
 
+const firstRow = reviews.slice(0, reviews.length / 2);
 const secondRow = reviews.slice(reviews.length / 2);
 
 const ReviewCard = ({
@@ -86,10 +87,15 @@ const ReviewCard = ({
   );
 };
 
-export function SchoolsMarquee() {
+export function Testimonials() {
   return (
-    <div className="flex items-center justify-center h-[300px] w-full mx-auto">
-    <div className="relative flex h-[300px] w-full max-w-3xl flex-col items-center justify-center overflow-hidden rounded-lg bg-background md:shadow-xl">
+    <div className="flex items-center justify-center h-[500px] w-full mx-auto">
+    <div className="relative flex h-[500px] w-full max-w-3xl flex-col items-center justify-center overflow-hidden rounded-lg bg-background md:shadow-xl">
+      <Marquee pauseOnHover className="[--duration:20s]">
+        {firstRow.map((review) => (
+          <ReviewCard key={review.username} {...review} />
+        ))}
+      </Marquee>
       <Marquee reverse pauseOnHover className="[--duration:20s]">
         {secondRow.map((review) => (
           <ReviewCard key={review.username} {...review} />
