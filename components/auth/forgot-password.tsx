@@ -14,6 +14,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { sendPasswordResetCodeAction } from '@/app/actions/auth'
+import { useAuth } from '@/contexts/auth-context'
 
 const formSchema = z.object({
   email: z
@@ -24,19 +26,27 @@ const formSchema = z.object({
 
 export function ForgotForm({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false)
+  const { nextStep, setEmail } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: '' },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    console.log(data)
-
-    setTimeout(() => {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    try {
+      setIsLoading(true)
+      const result=await sendPasswordResetCodeAction(data.email)
+      if (result.success) {
+        setEmail(data.email)
+        nextStep() 
+      }
+    } catch (error) {
+      console.log(error)
+      
+    } finally {
       setIsLoading(false)
-    }, 3000)
+    }
   }
 
   return (

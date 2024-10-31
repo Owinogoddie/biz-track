@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/custom/button";
 import { PasswordInput } from "@/components/custom/password-input";
 import { useAuth } from "@/contexts/auth-context";
-import { login } from "@/app/actions/auth";
+import { loginAction } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
@@ -52,7 +52,7 @@ export function LoginForm({
   async function onSubmit(data: FormValues) {
     setIsLoading(true);
     try {
-      const result = await login({
+      const result = await loginAction({
         email: data.email,
         password: data.password,
       });
@@ -66,7 +66,7 @@ export function LoginForm({
         }
       } else {
         form.setError("root", {
-          message: result.error || "Login failed",
+          message: result.message || "Login failed",
         });
       }
     } catch (error) {

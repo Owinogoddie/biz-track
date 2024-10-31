@@ -1,61 +1,242 @@
-// src/app/actions/auth.ts
 'use server'
 
-interface LoginCredentials {
-  email: string
-  password: string
-}
+import { cookies } from 'next/headers'
+import { lucia } from '@/lib/auth'
+import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs';
+import { generateEmailVerificationToken, sendVerificationEmail } from '@/lib/mail'
 
-export async function login(credentials: LoginCredentials) {
+export async function registerAction({ email, password }: { email: string; password: string }) {
   try {
-    // Your actual login logic here
-    // This could involve:
-    // 1. Validating credentials against your database
-    // 2. Creating a session
-    // 3. Setting cookies
-    // 4. Generating JWT tokens, etc.
-    
-    // Example implementation:
-    const response = await fetch('your-auth-api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+    if (existingUser) {
+      return { success: false, message: 'Email already in use' }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = await generateEmailVerificationToken()
+    const expiresAt = new Date(Date.now() + 600000); // 10 minutes from now
+
+   await prisma.user.create({
+      data: {
+        email,
+        hashedPassword,
+        verificationCode: {
+          create: {
+            code: verificationCode,
+            email,
+            expiresAt,
+          },
+        },
+      },
     })
 
-    const data = await response.json()
+    await sendVerificationEmail(email, verificationCode)
 
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.message || 'Invalid credentials'
-      }
-    }
-
-    // Set any necessary cookies or session data here
-    
-    return {
-      success: true,
-      user: data.user
-    }
+    return { success: true, message: "User created. Please check your email for the verification code." }
   } catch (error) {
-    console.log(error)
-    return {
-      success: false,
-      error: 'An unexpected error occurred'
-    }
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
   }
 }
 
+export async function verifyEmailAction({email,code}:{email: string, code: string}) {
+  try {
+    const verificationCode = await prisma.verificationCode.findFirst({
+      where: {
+        email,
+        code,
+      },
+      include: { user: true },
+    });
 
-export async function signUp(formData: FormData) {
-    console.log(formData)
-    // Your signup logic here
-    return { success: true }
-  }
-  
-  export async function verifyOtp(formData: FormData) {
-    console.log(formData)
+    if (!verificationCode) {
+      return { success: false, message: 'Invalid or expired token' }
+    }
 
-    // Your OTP verification logic here
-    return { success: true }
+    if (verificationCode.expiresAt < new Date()) {
+      await prisma.verificationCode.delete({
+        where: { id: verificationCode.id },
+      });
+      return { success: false, message: "Verification code has expired" };
+    }
+    await prisma.user.update({
+      where: { id: verificationCode.userId },
+      data: { emailVerified: true },
+    });
+
+    await prisma.verificationCode.delete({
+      where: { id: verificationCode.id },
+    });
+    return { success: true, message: "Email verified successfully" }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
   }
+}
+
+export async function loginAction({email,password,domain}:{email: string, password: string, domain?: string}) {
+  try {
+    let user
+    if (domain) {
+      const school = await prisma.school.findUnique({
+        where: { subdomain:domain },
+        include: { users: { where: { email } } },
+      })
+
+      if (!school || school.users.length === 0) {
+        return { success: false, message: 'Invalid credentials' }
+      }
+
+      user = school.users[0]
+    } else {
+      user = await prisma.user.findUnique({ where: { email } })
+    }
+
+    if (!user) {
+      return { success: false, message: 'Invalid credentials' }
+    }
+
+    if (!user.emailVerified) {
+      return { success: false, message: 'Please verify your email before logging in' }
+    }
+
+    const validPassword = await bcrypt.compare(password, user.hashedPassword!);
+    if (!validPassword) {
+      return { success: false, message: 'Invalid credentials' }
+    }
+
+    const session = await lucia.createSession(user.id, {})
+    const sessionCookie = lucia.createSessionCookie(session.id)
+    cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+
+    return { success: true,message:"successfully logged in" }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
+  }
+}
+
+export async function logoutAction() {
+  try {
+    const sessionId = cookies().get(lucia.sessionCookieName)?.value
+    if (!sessionId) {
+      return { success: true }
+    }
+
+    await lucia.invalidateSession(sessionId);
+    const sessionCookie = lucia.createBlankSessionCookie();
+    cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, error: 'An error occurred' }
+  }
+}
+
+export async function sendPasswordResetCodeAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return { success: false, message: 'User not found' }
+    }
+
+    const verificationCode = await generateEmailVerificationToken()
+    const expiresAt = new Date(Date.now() + 600000) // 10 minutes from now
+
+    await prisma.verificationCode.create({
+      data: {
+        userId: user.id,
+        code: verificationCode,
+        email,
+        expiresAt,
+        type: 'PASSWORD_RESET',
+      },
+    })
+
+    await sendVerificationEmail(email, verificationCode)
+
+    return { success: true, message: 'Verification code sent. Please check your email.' }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
+  }
+}
+
+export async function verifyPasswordResetCodeAction({email,verificationCode}:{email: string, verificationCode: string}) {
+  try {
+    const code = await prisma.verificationCode.findFirst({
+      where: {
+        email,
+        code: verificationCode,
+        type: 'PASSWORD_RESET',
+        expiresAt: { gt: new Date() },
+      },
+    })
+
+    if (!code) {
+      return { success: false, message: 'Invalid or expired verification code' }
+    }
+
+    return { success: true, message: 'Verification code valid' }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
+  }
+}
+
+export async function resetPasswordAction({email,verificationCode,newPassword}:{email: string, verificationCode: string, newPassword: string}) {
+  try {
+    const code = await prisma.verificationCode.findFirst({
+      where: {
+        email,
+        code: verificationCode,
+        type: 'PASSWORD_RESET',
+        expiresAt: { gt: new Date() },
+      },
+    })
+
+    if (!code) {
+      return { success: false, message: 'Invalid or expired verification code' }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { email },
+      data: { hashedPassword },
+    })
+
+    await prisma.verificationCode.delete({ where: { id: code.id } })
+
+    return { success: true, message: 'Password reset successfully' }
+  } catch (error) {
+    console.error(error)
+    return { success: false, message: 'An error occurred' }
+  }
+}
+
+export async function getUserAction() {
+  try {
+    const sessionId = cookies().get(lucia.sessionCookieName)?.value
+    
+    if (!sessionId) {
+      return { success: false, user: null }
+    }
+
+    const { user } = await lucia.validateSession(sessionId)
+    
+    if (!user) {
+      return { success: false, user: null }
+    }
+
+    return { 
+      success: true, 
+      user: user 
+    }
+  } catch (error) {
+    console.error('Error in getUserAction:', error)
+    return { success: false, user: null }
+  }
+}

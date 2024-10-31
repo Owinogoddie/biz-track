@@ -19,7 +19,7 @@ import { Button } from '@/components/custom/button'
 import { PasswordInput } from '@/components/custom/password-input'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
-import { simulateSignup } from '@/lib/auth-simulation'
+import { registerAction } from '@/app/actions/auth'
 
 const formSchema = z
   .object({
@@ -58,7 +58,7 @@ export function SignUpForm({ className, ...props }: HTMLAttributes<HTMLDivElemen
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const response = await simulateSignup({
+      const response = await registerAction({
         email: data.email,
         password: data.password
       })

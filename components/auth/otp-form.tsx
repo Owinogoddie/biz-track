@@ -17,8 +17,8 @@ import { Input } from '@/components/ui/input'
 import { PinInput, PinInputField } from '@/components/custom/pin-input'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { simulateOtpVerification } from '@/lib/auth-simulation'
 import { useAuth } from '@/contexts/auth-context'
+import { verifyEmailAction } from '@/app/actions/auth'
 
 const formSchema = z.object({
   otp: z.string().min(1, { message: 'Please enter your otp code.' }),
@@ -27,7 +27,7 @@ const formSchema = z.object({
 export function OtpForm({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false)
   const [disabledBtn, setDisabledBtn] = useState(true)
-  const { nextStep } = useAuth()
+  const { nextStep, email } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -37,7 +37,7 @@ export function OtpForm({ className, ...props }: HTMLAttributes<HTMLDivElement>)
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const response = await simulateOtpVerification(data.otp)
+      const response = await verifyEmailAction({email,code:data.otp})
       if (response.success) {
         nextStep()
       }
@@ -83,6 +83,11 @@ export function OtpForm({ className, ...props }: HTMLAttributes<HTMLDivElement>)
                 </FormItem>
               )}
             />
+             <div className="mb-4 flex flex-col space-y-2 text-center">
+              <p className="text-sm text-muted-foreground">
+                We sent a verification code to {email}
+              </p>
+            </div>
             <Button className='mt-2' disabled={disabledBtn} loading={isLoading}>
               Verify
             </Button>

@@ -41,6 +41,7 @@ export function ForgotPasswordFlow() {
       case 'newPassword':
         return (
           <NewPasswordForm
+          email={email}
             token={resetToken}
             onSuccess={() => goToNextStep('complete')}
           />

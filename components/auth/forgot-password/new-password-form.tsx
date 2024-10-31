@@ -5,10 +5,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/custom/button'
 import { Input } from "@/components/ui/input"
 import { EyeIcon, EyeOffIcon } from "lucide-react"
-import { simulateResetPassword } from '@/lib/auth-simulation'
+import { resetPasswordAction } from '@/app/actions/auth'
 
 const formSchema = z
   .object({
@@ -27,9 +27,10 @@ const formSchema = z
 interface NewPasswordFormProps {
   token: string
   onSuccess: () => void
+  email:string
 }
 
-export function NewPasswordForm({ token, onSuccess }: NewPasswordFormProps) {
+export function NewPasswordForm({ token, onSuccess,email }: NewPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -45,14 +46,15 @@ export function NewPasswordForm({ token, onSuccess }: NewPasswordFormProps) {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const response = await simulateResetPassword({
-        token,
-        newPassword: data.password
+      const response = await resetPasswordAction({
+        verificationCode:token,
+        newPassword: data.password,
+        email
       })
       if (response.success) {
         onSuccess()
       } else {
-        form.setError('root', { message: response.error })
+        form.setError('root', { message: response.message })
       }
     } catch (error) {
       console.error(error)
@@ -146,7 +148,7 @@ export function NewPasswordForm({ token, onSuccess }: NewPasswordFormProps) {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={isLoading}
+          loading={isLoading}
         >
           {isLoading ? "Resetting..." : "Reset Password"}
         </Button>

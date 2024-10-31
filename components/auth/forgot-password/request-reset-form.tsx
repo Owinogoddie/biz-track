@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { simulateRequestPasswordReset } from '@/lib/auth-simulation'
+import { Button } from '@/components/custom/button'
+import { sendPasswordResetCodeAction } from '@/app/actions/auth'
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address')
@@ -28,11 +28,11 @@ export function RequestResetForm({ onSuccess }: RequestResetFormProps) {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const response = await simulateRequestPasswordReset(data.email)
+      const response = await sendPasswordResetCodeAction(data.email)
       if (response.success) {
         onSuccess(data.email)
       } else {
-        form.setError('root', { message: response.error })
+        form.setError('root', { message: response.message })
       }
     } catch (error) {
         console.log(error)
@@ -58,8 +58,8 @@ export function RequestResetForm({ onSuccess }: RequestResetFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          Send Reset Instructions
+        <Button type="submit" className="w-full" loading={isLoading}>
+          Send Reset Code
         </Button>
       </form>
     </Form>

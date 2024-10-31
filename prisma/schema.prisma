@@ -1,0 +1,132 @@
+// Define the generator for Prisma Client
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Define the database connection
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  // uncomment next line if you use Prisma <5.10
+  // directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// User model
+model User {
+  id               String            @id @unique @default(uuid())
+  email            String            @unique
+  hashedPassword   String?
+  name             String?
+  picture          String?
+  role             UserRole          @default(USER)
+  emailVerified    Boolean           @default(false)
+  verificationCode VerificationCode?
+
+  school           School?           @relation(name: "SchoolUsersRelation", fields: [schoolId], references: [id])
+  schoolId         String?
+
+  headTeacherOf    School?           @relation(name: "HeadTeacherRelation")
+
+  sessions         Session[]
+  oauthAccounts    OAuthAccount[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+// VerificationCode model
+model VerificationCode {
+  id        String   @id @default(uuid())
+  code      String
+  userId    String   @unique
+  email     String
+  type      String?
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Session model
+model Session {
+  id           String   @id @unique @default(uuid())
+  userId       String
+  expiresAt    DateTime
+  sessionToken String?  @unique
+  accessToken  String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// OAuthAccount model
+model OAuthAccount {
+  provider       String
+  providerUserId String
+  refreshToken   String?
+  userId         String
+  user           User    @relation(fields: [userId], references: [id])
+
+  @@id([provider, providerUserId])
+}
+
+// School model
+model School {
+  id               String        @id @default(cuid())
+  name             String
+  subdomain        String        @unique
+  primaryColor     String?
+  secondaryColor   String?
+  tertiaryColor    String?
+  motto            String?
+  vision           String?
+  mission          String?
+  logo             String?
+
+  headTeacherUserId String? @unique    
+  headTeacher       User?        @relation(name: "HeadTeacherRelation", fields: [headTeacherUserId], references: [id])
+
+  users             User[]       @relation(name: "SchoolUsersRelation")
+  subscription      Subscription?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+}
+
+// Plan model
+model Plan {
+  id           String         @id @default(cuid())
+  name         String
+  description  String
+  price        Float
+  duration     Int            // Duration in days
+  features     String[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+// Subscription model
+model Subscription {
+  id        String              @id @default(cuid())
+  schoolId  String              @unique
+  school    School              @relation(fields: [schoolId], references: [id])
+  planId    String
+  plan      Plan                @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}

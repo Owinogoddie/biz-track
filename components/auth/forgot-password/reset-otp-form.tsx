@@ -6,13 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
-import { simulateOtpVerification } from '@/lib/auth-simulation'
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
+import { verifyPasswordResetCodeAction } from '@/app/actions/auth'
 
 const formSchema = z.object({
   otp: z.string().length(6, 'Please enter all digits')
@@ -34,11 +34,11 @@ export function ResetOtpForm({ email, onSuccess }: ResetOtpFormProps) {
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const response = await simulateOtpVerification(data.otp)
+      const response = await verifyPasswordResetCodeAction({verificationCode:data.otp,email})
       if (response.success) {
         onSuccess(data.otp)
       } else {
-        form.setError('root', { message: response.error })
+        form.setError('root', { message: response.message })
       }
     } catch (error) {
       console.log(error)

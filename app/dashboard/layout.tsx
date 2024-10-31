@@ -1,7 +1,7 @@
 'use client'
 
 import { Search } from '@/components/search'
-import { UserNav } from '@/components/user-nav'
+import { UserNav } from '@/components/auth/user-nav'
 import Sidebar from '@/components/sidebar'
 import SkipToMain from '@/components/skip-to-main'
 import useIsCollapsed from '@/hooks/useIsCollapsed'
