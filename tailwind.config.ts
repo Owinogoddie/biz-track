@@ -16,6 +16,12 @@ const config: Config = {
 		},
 	  },
   	extend: {
+		backgroundImage: {
+			'grid-black': 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 60 60\'%3E%3Cpath d=\'M0 0h60v60H0z\' fill=\'none\' stroke=\'%23000\' stroke-opacity=\'.1\' stroke-width=\'1\'/%3E%3C/svg%3E")',
+			'grid-white': 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 60 60\'%3E%3Cpath d=\'M0 0h60v60H0z\' fill=\'none\' stroke=\'%23fff\' stroke-opacity=\'.1\' stroke-width=\'1\'/%3E%3C/svg%3E")',
+			'dot-black': 'url("data:image/svg+xml,%3Csvg width=\'16\' height=\'16\' viewBox=\'0 0 16 16\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'8\' cy=\'8\' r=\'1\' fill=\'%23000\'/%3E%3C/svg%3E")',
+			'dot-white': 'url("data:image/svg+xml,%3Csvg width=\'16\' height=\'16\' viewBox=\'0 0 16 16\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'8\' cy=\'8\' r=\'1\' fill=\'%23fff\'/%3E%3C/svg%3E")',
+		  },
 		colors: {
 		  border: "hsl(var(--border))",
 		  input: "hsl(var(--input))",
