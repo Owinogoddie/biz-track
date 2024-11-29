@@ -1,177 +1,146 @@
 import {
-    IconApps,
-    IconBarrierBlock,
-    IconBoxSeam,
-    IconChartHistogram,
-    IconChecklist,
-    IconComponents,
-    IconError404,
-    IconExclamationCircle,
-    IconHexagonNumber1,
-    IconHexagonNumber2,
-    IconHexagonNumber3,
-    IconHexagonNumber4,
-    IconHexagonNumber5,
-    IconLayoutDashboard,
-    IconMessages,
-    IconRouteAltLeft,
-    IconServerOff,
-    IconSettings,
-    IconTruck,
-    IconUserShield,
-    IconUsers,
-    IconLock,
-  } from '@tabler/icons-react'
-  
-  export interface NavLink {
-    title: string
-    label?: string
-    href: string
-    icon: JSX.Element
-  }
-  
-  export interface SideLink extends NavLink {
-    sub?: NavLink[]
-  }
-  
-  export const sidelinks: SideLink[] = [
-    {
+  IconLayoutDashboard,
+  IconBox,
+  IconCategory,
+  IconTruck,
+  IconUsers,
+  IconShoppingCart,
+  IconReceipt,
+  IconChartBar,
+  IconSettings,
+  IconMoneybag,
+  IconPackage,
+  IconChartLine,
+} from '@tabler/icons-react'
+
+export interface NavLink {
+  title: string
+  label?: string
+  href: string
+  icon: JSX.Element
+}
+
+export interface SideLink extends NavLink {
+  sub?: NavLink[]
+}
+
+export const sidelinks: SideLink[] = [
+  {
       title: 'Dashboard',
       label: '',
-      href: '/',
+      href: '/dashboard',
       icon: <IconLayoutDashboard size={18} />,
-    },
-    {
-      title: 'Tasks',
-      label: '3',
-      href: '/tasks',
-      icon: <IconChecklist size={18} />,
-    },
-    {
-      title: 'Chats',
-      label: '9',
-      href: '/chats',
-      icon: <IconMessages size={18} />,
-    },
-    {
-      title: 'Apps',
+  },
+  {
+      title: 'Products',
       label: '',
-      href: '/apps',
-      icon: <IconApps size={18} />,
-    },
-    {
-      title: 'Authentication',
-      label: '',
-      href: '',
-      icon: <IconUserShield size={18} />,
+      href: '/dashboard/products',
+      icon: <IconBox size={18} />,
       sub: [
-        {
-          title: 'Sign In (email + password)',
-          label: '',
-          href: '/sign-in',
-          icon: <IconHexagonNumber1 size={18} />,
-        },
-        {
-          title: 'Sign In (Box)',
-          label: '',
-          href: '/sign-in-2',
-          icon: <IconHexagonNumber2 size={18} />,
-        },
-        {
-          title: 'Sign Up',
-          label: '',
-          href: '/sign-up',
-          icon: <IconHexagonNumber3 size={18} />,
-        },
-        {
-          title: 'Forgot Password',
-          label: '',
-          href: '/forgot-password',
-          icon: <IconHexagonNumber4 size={18} />,
-        },
-        {
-          title: 'OTP',
-          label: '',
-          href: '/otp',
-          icon: <IconHexagonNumber5 size={18} />,
-        },
-      ],
-    },
-    {
-      title: 'Users',
+          {
+              title: 'Product List',
+              label: '',
+              href: '/dashboard/products/list',
+              icon: <IconPackage size={18} />,
+          },
+          {
+              title: 'Categories',
+              label: '',
+              href: '/dashboard/products/categories',
+              icon: <IconCategory size={18} />,
+          },
+      ]
+  },
+  {
+      title: 'Inventory',
       label: '',
-      href: '/users',
+      href: '/dashboard/inventory',
+      icon: <IconShoppingCart size={18} />,
+      sub: [
+          {
+              title: 'Stock Levels',
+              label: '',
+              href: '/dashboard/inventory/stock',
+              icon: <IconBox size={18} />,
+          },
+          {
+              title: 'Restock',
+              label: '',
+              href: '/dashboard/inventory/restock',
+              icon: <IconTruck size={18} />,
+          },
+      ]
+  },
+  {
+      title: 'Sales',
+      label: '',
+      href: '/dashboard/sales',
+      icon: <IconReceipt size={18} />,
+      sub: [
+          {
+              title: 'Sales History',
+              label: '',
+              href: '/dashboard/sales/history',
+              icon: <IconChartBar size={18} />,
+          },
+          {
+              title: 'Create Sale',
+              label: '',
+              href: '/dashboard/sales/create',
+              icon: <IconShoppingCart size={18} />,
+          },
+      ]
+  },
+  {
+      title: 'Customers',
+      label: '',
+      href: '/dashboard/customers',
       icon: <IconUsers size={18} />,
-    },
-    {
-      title: 'Requests',
-      label: '10',
-      href: '/requests',
-      icon: <IconRouteAltLeft size={18} />,
       sub: [
-        {
-          title: 'Trucks',
-          label: '9',
-          href: '/trucks',
-          icon: <IconTruck size={18} />,
-        },
-        {
-          title: 'Cargos',
-          label: '',
-          href: '/cargos',
-          icon: <IconBoxSeam size={18} />,
-        },
-      ],
-    },
-    {
-      title: 'Analysis',
+          {
+              title: 'Customer List',
+              label: '',
+              href: '/dashboard/customers/list',
+              icon: <IconUsers size={18} />,
+          },
+          {
+              title: 'Customer Debts',
+              label: '',
+              href: '/dashboard/customers/debts',
+              icon: <IconMoneybag size={18} />,
+          },
+      ]
+  },
+  {
+      title: 'Suppliers',
       label: '',
-      href: '/analysis',
-      icon: <IconChartHistogram size={18} />,
-    },
-    {
-      title: 'Extra Components',
+      href: '/dashboard/suppliers',
+      icon: <IconTruck size={18} />,
+  },
+  {
+      title: 'Reports',
       label: '',
-      href: '/extra-components',
-      icon: <IconComponents size={18} />,
-    },
-    {
-      title: 'Error Pages',
-      label: '',
-      href: '',
-      icon: <IconExclamationCircle size={18} />,
+      href: '/dashboard/reports',
+      icon: <IconChartLine size={18} />,
       sub: [
-        {
-          title: 'Not Found',
-          label: '',
-          href: '/404',
-          icon: <IconError404 size={18} />,
-        },
-        {
-          title: 'Internal Server Error',
-          label: '',
-          href: '/500',
-          icon: <IconServerOff size={18} />,
-        },
-        {
-          title: 'Maintenance Error',
-          label: '',
-          href: '/503',
-          icon: <IconBarrierBlock size={18} />,
-        },
-        {
-          title: 'Unauthorised Error',
-          label: '',
-          href: '/401',
-          icon: <IconLock size={18} />,
-        },
-      ],
-    },
-    {
+          {
+              title: 'Sales Report',
+              label: '',
+              href: '/dashboard/reports/sales',
+              icon: <IconChartBar size={18} />,
+          },
+          {
+              title: 'Inventory Report',
+              label: '',
+              href: '/dashboard/reports/inventory',
+              icon: <IconBox size={18} />,
+          },
+      ]
+  },
+  {
       title: 'Settings',
       label: '',
-      href: '/settings',
+      href: '/dashboard/settings',
       icon: <IconSettings size={18} />,
-    },
-  ]
-  
+  },
+]

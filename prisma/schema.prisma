@@ -1,17 +1,14 @@
-// Define the generator for Prisma Client
 generator client {
   provider = "prisma-client-js"
 }
 
-// Define the database connection
 datasource db {
   provider  = "postgresql"
-  url  	    = env("DATABASE_URL")
-  // uncomment next line if you use Prisma <5.10
-  // directUrl = env("DATABASE_URL_UNPOOLED")
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// User model
+// uth-related models
 model User {
   id               String            @id @unique @default(uuid())
   email            String            @unique
@@ -21,19 +18,16 @@ model User {
   role             UserRole          @default(USER)
   emailVerified    Boolean           @default(false)
   verificationCode VerificationCode?
-
-  school           School?           @relation(name: "SchoolUsersRelation", fields: [schoolId], references: [id])
-  schoolId         String?
-
-  headTeacherOf    School?           @relation(name: "HeadTeacherRelation")
-
-  sessions         Session[]
-  oauthAccounts    OAuthAccount[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  
+  businesses       BusinessUser[]    // User can belong to multiple businesses
+  ownedBusinesses  Business[]        // Businesses owned by user
+  
+  sessions        Session[]
+  oauthAccounts   OAuthAccount[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
-// VerificationCode model
 model VerificationCode {
   id        String   @id @default(uuid())
   code      String
@@ -44,7 +38,6 @@ model VerificationCode {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Session model
 model Session {
   id           String   @id @unique @default(uuid())
   userId       String
@@ -56,7 +49,6 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// OAuthAccount model
 model OAuthAccount {
   provider       String
   providerUserId String
@@ -67,55 +59,216 @@ model OAuthAccount {
   @@id([provider, providerUserId])
 }
 
-// School model
-model School {
-  id               String        @id @default(cuid())
-  name             String
-  subdomain        String        @unique
-  primaryColor     String?
-  secondaryColor   String?
-  tertiaryColor    String?
-  motto            String?
-  vision           String?
-  mission          String?
-  logo             String?
+// models for business system
+model Business {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  logo          String?
+  domain        String?        @unique  // Domain is now part of business
+  
+  // Business details
+  address       String?
+  phone         String?
+  email         String?
+  website       String?
+  
+  // Relations
+  ownerId       String
+  owner         User           @relation(fields: [ownerId], references: [id])
+  users         BusinessUser[]
+  products      Product[]
+  categories    Category[]
+  suppliers     Supplier[]
+  customers     Customer[]
+  transactions  Transaction[]
+  subscription  Subscription?
 
-  headTeacherUserId String? @unique    
-  headTeacher       User?        @relation(name: "HeadTeacherRelation", fields: [headTeacherUserId], references: [id])
-
-  users             User[]       @relation(name: "SchoolUsersRelation")
-  subscription      Subscription?
-
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
-// Plan model
+model BusinessUser {
+  id          String       @id @default(cuid())
+  businessId  String
+  userId      String
+  role        BusinessRole @default(STAFF)
+  
+  business    Business     @relation(fields: [businessId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([businessId, userId])
+}
+
+
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  sku         String?       @unique
+  barcode     String?       @unique
+  description String?
+  price       Float
+  cost        Float
+  quantity    Int
+  minQuantity Int          @default(0)
+  
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id])
+  categoryId  String?
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  
+  transactions TransactionItem[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  products    Product[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([businessId, name])
+}
+
+model Supplier {
+  id          String        @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id])
+  transactions Transaction[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Customer {
+  id          String        @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  creditLimit Float         @default(0)
+  
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id])
+  transactions Transaction[]
+  debts       Debt[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  total         Float
+  paid          Float            @default(0)
+  notes         String?
+  
+  businessId    String
+  business      Business          @relation(fields: [businessId], references: [id])
+  customerId    String?           // Made optional
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  supplierId    String?
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  
+  items         TransactionItem[]
+  payments      Payment[]
+  debt          Debt?
+  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model TransactionItem {
+  id            String      @id @default(cuid())
+  quantity      Int
+  price         Float
+  total         Float
+  
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  amount        Float
+  method        PaymentMethod
+  reference     String?
+  
+  transactionId String
+  transaction   Transaction   @relation(fields: [transactionId], references: [id])
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Debt {
+  id            String      @id @default(cuid())
+  amount        Float
+  dueDate       DateTime
+  status        DebtStatus  @default(PENDING)
+  notes         String?
+  
+  customerId    String? 
+  customerName String?
+  customerPhoneNumber String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+
+// Subscription models (modified from original)
 model Plan {
-  id           String         @id @default(cuid())
-  name         String
-  description  String
-  price        Float
-  duration     Int            // Duration in days
-  features     String[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  description   String
+  price         Float
+  duration      Int           // Duration in days
+  maxBusinesses Int           @default(1)
+  features      String[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
 }
 
-// Subscription model
 model Subscription {
-  id        String              @id @default(cuid())
-  schoolId  String              @unique
-  school    School              @relation(fields: [schoolId], references: [id])
-  planId    String
-  plan      Plan                @relation(fields: [planId], references: [id])
-  status    SubscriptionStatus
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  id          String              @id @default(cuid())
+  businessId  String              @unique
+  business    Business            @relation(fields: [businessId], references: [id])
+  planId      String
+  plan        Plan                @relation(fields: [planId], references: [id])
+  status      SubscriptionStatus
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 }
 
 // Enums
@@ -123,6 +276,41 @@ enum UserRole {
   USER
   ADMIN
   SUPERADMIN
+}
+
+enum BusinessRole {
+  OWNER
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum TransactionType {
+  SALE
+  PURCHASE
+  RETURN
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  MOBILE_MONEY
+  OTHER
+}
+
+enum DebtStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
 }
 
 enum SubscriptionStatus {

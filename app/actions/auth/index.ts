@@ -17,7 +17,7 @@ export async function registerAction({ email, password }: { email: string; passw
     const verificationCode = await generateEmailVerificationToken()
     const expiresAt = new Date(Date.now() + 600000); // 10 minutes from now
 
-   await prisma.user.create({
+    await prisma.user.create({
       data: {
         email,
         hashedPassword,
@@ -40,7 +40,8 @@ export async function registerAction({ email, password }: { email: string; passw
   }
 }
 
-export async function verifyEmailAction({email,code}:{email: string, code: string}) {
+
+export async function verifyEmailAction({email, code}: {email: string, code: string}) {
   try {
     const verificationCode = await prisma.verificationCode.findFirst({
       where: {
@@ -60,6 +61,7 @@ export async function verifyEmailAction({email,code}:{email: string, code: strin
       });
       return { success: false, message: "Verification code has expired" };
     }
+
     await prisma.user.update({
       where: { id: verificationCode.userId },
       data: { emailVerified: true },
@@ -75,20 +77,33 @@ export async function verifyEmailAction({email,code}:{email: string, code: strin
   }
 }
 
-export async function loginAction({email,password,domain}:{email: string, password: string, domain?: string}) {
-  try {
-    let user
-    if (domain) {
-      const school = await prisma.school.findUnique({
-        where: { subdomain:domain },
-        include: { users: { where: { email } } },
-      })
 
-      if (!school || school.users.length === 0) {
+export async function loginAction({email, password, domain}: {email: string, password: string, domain?: string}) {
+  try {
+    let user;
+    
+    if (domain) {
+      const business = await prisma.business.findUnique({
+        where: { domain },
+        include: {
+          users: {
+            include: {
+              user: true
+            },
+            where: {
+              user: {
+                email
+              }
+            }
+          }
+        }
+      });
+
+      if (!business || business.users.length === 0) {
         return { success: false, message: 'Invalid credentials' }
       }
 
-      user = school.users[0]
+      user = business.users[0].user;
     } else {
       user = await prisma.user.findUnique({ where: { email } })
     }
@@ -110,12 +125,13 @@ export async function loginAction({email,password,domain}:{email: string, passwo
     const sessionCookie = lucia.createSessionCookie(session.id)
     cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 
-    return { success: true,message:"successfully logged in" }
+    return { success: true, message: "Successfully logged in" }
   } catch (error) {
     console.error(error)
     return { success: false, message: 'An error occurred' }
   }
 }
+
 
 export async function logoutAction() {
   try {
@@ -216,10 +232,10 @@ export async function resetPasswordAction({email,verificationCode,newPassword}:{
     return { success: false, message: 'An error occurred' }
   }
 }
-
 export async function getUserAction() {
   try {
-    const sessionId = cookies().get(lucia.sessionCookieName)?.value
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get(lucia.sessionCookieName)?.value
     
     if (!sessionId) {
       return { success: false, user: null }
@@ -231,9 +247,22 @@ export async function getUserAction() {
       return { success: false, user: null }
     }
 
+    // Get user's businesses with the correct relation names from schema
+    const userWithBusinesses = await prisma.user.findUnique({
+      where: { id: user.id },
+      // include: {
+      //   businesses: {
+      //     include: {
+      //       business: true
+      //     }
+      //   },
+      //   ownedBusinesses: true
+      // }
+    });
+
     return { 
       success: true, 
-      user: user 
+      user: userWithBusinesses 
     }
   } catch (error) {
     console.error('Error in getUserAction:', error)

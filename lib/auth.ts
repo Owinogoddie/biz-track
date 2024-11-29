@@ -18,7 +18,8 @@ export const lucia = new Lucia(adapter, {
       email: attributes.email,
       name: attributes.name,
       role: attributes.role,
-      schoolId: attributes.schoolId
+      emailVerified: attributes.emailVerified,
+      picture: attributes.picture
     };
   }
 });
@@ -36,9 +37,10 @@ declare module "lucia" {
     DatabaseUserAttributes: {
       id: string;
       email: string;
-      name: string;
+      name: string | null;
       role: "USER" | "ADMIN" | "SUPERADMIN";
-      schoolId: string | null;
+      emailVerified: boolean;
+      picture: string | null;
     };
   }
 }

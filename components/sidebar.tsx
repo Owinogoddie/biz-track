@@ -1,13 +1,13 @@
-// app/sidebar.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { IconChevronsLeft, IconMenu2, IconX } from '@tabler/icons-react'
-import { Button } from './custom/button'
+import { Button } from './ui/button'
 import Nav from './nav'
 import { cn } from '@/lib/utils'
 import { sidelinks } from '@/data/sidelinks'
 import { Layout } from './custom/layout'
+import { BusinessSelector } from './business/business-selector'
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -45,7 +45,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           sticky
           className="z-50 flex justify-between px-4 py-3 shadow-sm md:px-4"
         >
-          {/* Add content here */}
+          {!isCollapsed && <BusinessSelector />}
           <Button
             variant="ghost"
             size="icon"
@@ -57,7 +57,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           </Button>
         </Layout.Header>
         
-        {/* Navigation links */}
         <Nav
           className={`z-40 h-full flex-1 overflow-auto ${
             navOpened ? 'max-h-screen' : 'max-h-0 py-0 md:max-h-screen md:py-2'
@@ -67,7 +66,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           links={sidelinks}
         />
 
-        {/* Toggle collapse button */}
         <Button
           onClick={() => setIsCollapsed((prev) => !prev)}
           size="icon"
