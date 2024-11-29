@@ -8,17 +8,20 @@ import Footer from "./_components/Footer";
 import { HeroBg } from "./_components/hero-bg";
 import { Testimonials } from "./_components/testimonials";
 import { SchoolsMarquee } from "./_components/SchoolsMarquee";
+import CallToAction from "./_components/CallToAction";
+import Hero from "./_components/Hero";
 
 export default function Home() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <HeroBg />
+      {/* <HeroBg /> */}
+      <Hero/>
       <SchoolsMarquee/>
       <Features />
       <Stats />
       <Testimonials />
-      <CTA />
+      <CallToAction/>
       <Footer />
     </div>
   );

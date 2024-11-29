@@ -1,55 +1,87 @@
-// components/Features.tsx
-import { Card } from "@/components/ui/card";
-import { 
-  BookOpen, 
-  Calendar, 
-  Users, 
-  ChartBar, 
-  MessageCircle, 
-  Shield 
-} from "lucide-react";
+'use client'
+
+import { motion } from 'framer-motion'
+import { ClipboardList, Users, BarChart, Briefcase } from 'lucide-react'
 
 const features = [
   {
-    title: "Academic Management",
-    description: "Track grades, attendance, and curriculum planning all in one place.",
-    icon: BookOpen,
+    name: 'Inventory Management',
+    description: 'Keep track of your stock levels, set reorder points, and manage multiple warehouses.',
+    icon: ClipboardList,
   },
   {
-    title: "Schedule Planning",
-    description: "Effortlessly manage class schedules and academic calendar.",
-    icon: Calendar,
-  },
-  {
-    title: "Student Portal",
-    description: "Give students access to assignments, grades, and resources.",
+    name: 'Service Tracking',
+    description: 'Log and monitor services provided, schedule appointments, and manage customer history.',
     icon: Users,
   },
-  // Add more features...
-];
+  {
+    name: 'Multi-Business Support',
+    description: 'Manage multiple businesses from a single account with separate inventories and reports.',
+    icon: Briefcase,
+  },
+  {
+    name: 'Advanced Analytics',
+    description: 'Gain insights into your business performance with detailed reports and dashboards.',
+    icon: BarChart,
+  },
+]
 
-export default function Features() {
+const Features = () => {
   return (
-    <section className="py-20 bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">Powerful Features</h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            Everything you need to manage your school efficiently
-          </p>
+    <div id="features" className="py-12 bg-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="lg:text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-base text-indigo-400 font-semibold tracking-wide uppercase"
+          >
+            Features
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl"
+          >
+            Everything you need to manage your business
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto"
+          >
+            InventoryPro provides a comprehensive suite of tools to help you manage your inventory and services efficiently.
+          </motion.p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-              <feature.icon className="w-12 h-12 text-blue-600 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                {feature.description}
-              </p>
-            </Card>
-          ))}
+
+        <div className="mt-10">
+          <dl className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="relative"
+              >
+                <dt>
+                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                    <feature.icon className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <p className="ml-16 text-lg leading-6 font-medium text-white">{feature.name}</p>
+                </dt>
+                <dd className="mt-2 ml-16 text-base text-gray-300">{feature.description}</dd>
+              </motion.div>
+            ))}
+          </dl>
         </div>
       </div>
-    </section>
-  );
+    </div>
+  )
 }
+
+export default Features
+
