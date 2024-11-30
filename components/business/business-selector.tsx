@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import * as React from "react"
 import { Check, ChevronsUpDown, PlusCircle } from "lucide-react"
@@ -10,6 +10,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
   Popover,
@@ -41,43 +42,45 @@ export function BusinessSelector() {
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {currentBusiness ? currentBusiness.name : "Select business..."}
+            {currentBusiness?.name || "Select business..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
           <Command>
             <CommandInput placeholder="Search business..." />
-            <CommandEmpty>No business found.</CommandEmpty>
-            <CommandGroup>
-              {businesses.map((business) => (
+            <CommandList>
+              <CommandEmpty>No business found.</CommandEmpty>
+              <CommandGroup>
+                {businesses?.map((business) => (
+                  <CommandItem
+                    key={business.id}
+                    value={business.name}
+                    onSelect={() => {
+                      setCurrentBusiness(business)
+                      setOpen(false)
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        currentBusiness?.id === business.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {business.name}
+                  </CommandItem>
+                ))}
                 <CommandItem
-                  key={business.id}
-                  value={business.name}
                   onSelect={() => {
-                    setCurrentBusiness(business)
+                    setShowCreateModal(true)
                     setOpen(false)
                   }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      currentBusiness?.id === business.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {business.name}
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create new business
                 </CommandItem>
-              ))}
-              <CommandItem
-                onSelect={() => {
-                  setShowCreateModal(true)
-                  setOpen(false)
-                }}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create new business
-              </CommandItem>
-            </CommandGroup>
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>

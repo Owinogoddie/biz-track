@@ -44,7 +44,7 @@ export function CreateBusinessModal({ userId, onClose }: CreateBusinessModalProp
   })
 
   async function onSubmit(data: BusinessFormValues) {
-    const result = await createBusiness(userId, {
+    const result = await createBusiness({
         name: data.name,
         description: data.description,
         email: data.email || undefined,

@@ -9,9 +9,10 @@ import { Layout } from '@/components/custom/layout'
 import { ThemeToggle } from '@/components/theme-switch'
 import { CreateBusinessModal } from '@/components/modals/create-business-modal'
 import { useBusinessStore } from '@/store/useBusinessStore'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { getBusinesses } from '../actions/business'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardLayout({
   children,
@@ -21,12 +22,21 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useIsCollapsed()
   const { hasBusiness, setHasBusiness, setBusinesses, setCurrentBusiness } = useBusinessStore()
   const { user, isLoading } = useUser()
+  const [showDebug, setShowDebug] = useState(false)
+  const [forceShowModal, setForceShowModal] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login')
+      return
+    }
+
     const loadBusinesses = async () => {
       if (!user) return
       
-      const result = await getBusinesses(user.id)
+      const result = await getBusinesses()
+      console.log('Businesses loaded:', result)
       if (result.success) {
         setBusinesses(result.businesses)
         setHasBusiness(result.businesses.length > 0)
@@ -39,7 +49,13 @@ export default function DashboardLayout({
     if (!isLoading) {
       loadBusinesses()
     }
-  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness])
+  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router])
+
+  // If still loading or no user, show nothing
+  if (isLoading || !user) {
+    return null
+  }
+
 
   return (
     <div className='relative h-full overflow-hidden bg-background'>
@@ -54,6 +70,20 @@ export default function DashboardLayout({
             <div className='flex w-full items-center justify-between'>
               <Search />
               <div className='flex items-center space-x-4'>
+                {/* <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowDebug(!showDebug)}
+                >
+                  Toggle Debug
+                </Button> */}
+                {/* <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setForceShowModal(true)}
+                >
+                  Show Business Modal
+                </Button> */}
                 <ThemeToggle />
                 <UserNav />
               </div>
@@ -61,8 +91,19 @@ export default function DashboardLayout({
           </Layout.Header>
 
           <Layout.Body>
-            {!isLoading && !hasBusiness && user && (
-              <CreateBusinessModal userId={user.id} />
+            {showDebug && (
+              <div className="p-4 bg-muted rounded-lg mb-4 text-left">
+                <p>User Loading: {String(isLoading)}</p>
+                <p>Has User: {String(!!user)}</p>
+                <p>User ID: {user?.id}</p>
+                <p>Has Business: {String(hasBusiness)}</p>
+              </div>
+            )}
+            {(!isLoading && !hasBusiness && user || forceShowModal) && (
+              <CreateBusinessModal 
+                userId={user?.id || ''} 
+                onClose={() => setForceShowModal(false)}
+              />
             )}
             {children}
           </Layout.Body>

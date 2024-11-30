@@ -1,5 +1,3 @@
-// src/components/login-form.tsx
-
 "use client";
 
 import { HTMLAttributes, useState } from "react";
@@ -30,7 +28,6 @@ const formSchema = z.object({
   password: z.string().min(1, { message: "Please enter your password" }),
 });
 
-// Define form values type based on the Zod schema
 type FormValues = z.infer<typeof formSchema>;
 
 export function LoginForm({
@@ -38,7 +35,7 @@ export function LoginForm({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   const [isLoading, setIsLoading] = useState(false);
-  const { closeAuth, redirectPath,openAuth } = useAuth();
+  const { closeAuth, redirectPath, openAuth } = useAuth();
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -121,13 +118,22 @@ export function LoginForm({
           </div>
         </form>
       </Form>
-      <Button
-        variant="link"
-        className="px-0 font-normal"
-        onClick={() => openAuth("forgot-password")}
-      >
-        Forgot password?
-      </Button>
+      <div className="flex justify-between items-center">
+        <Button
+          variant="link"
+          className="px-0 font-normal"
+          onClick={() => openAuth("forgot-password")}
+        >
+          Forgot password?
+        </Button>
+        <Button
+          variant="link"
+          className="px-0 font-normal"
+          onClick={() => openAuth("signup")}
+        >
+          Don't have an account? Sign up
+        </Button>
+      </div>
     </div>
   );
 }

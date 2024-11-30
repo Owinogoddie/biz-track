@@ -4,6 +4,7 @@ import { useUser } from "@/hooks/useUser";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "../custom/button";
 import { LogoutButton } from "./logout-button";
+import { UserNav } from "./user-nav";
 
 export function AuthButton() {
   const { openAuth } = useAuth();
@@ -33,8 +34,9 @@ export function AuthButton() {
         </>
       ) : (
         <>
-        <p>Logged in as {user?.email}</p>
-        <LogoutButton/>
+        {/* <p>Logged in as {user?.email}</p> */}
+        <UserNav/>
+        {/* <LogoutButton/> */}
         </>
       )}
     </div>

@@ -1,5 +1,7 @@
+'use client'
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/custom/button'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,24 +13,47 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LogoutButton } from './logout-button'
+import { useUser } from '@/hooks/useUser'
 
 export function UserNav() {
+  const { user, isLoading } = useUser()
+
+  if (isLoading) {
+    return null // Or a loading spinner
+  }
+
+  if (!user) {
+    return null // Or login button
+  }
+
+  const initials = user.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : user.email
+    ? user.email.charAt(0).toUpperCase()
+    : 'U'
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
           <Avatar className='h-8 w-8'>
-            <AvatarImage src='/avatars/01.png' alt='@shadcn' />
-            <AvatarFallback>SN</AvatarFallback>
+            {user.image ? (
+              <AvatarImage src={user.image} alt={user.name || ''} />
+            ) : null}
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
         <DropdownMenuLabel className='font-normal'>
           <div className='flex flex-col space-y-1'>
-            <p className='text-sm font-medium leading-none'>satnaing</p>
+            <p className='text-sm font-medium leading-none'>{user.name}</p>
             <p className='text-xs leading-none text-muted-foreground'>
-              satnaingdev@gmail.com
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>

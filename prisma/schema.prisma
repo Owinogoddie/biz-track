@@ -65,7 +65,7 @@ model Business {
   name          String
   description   String?
   logo          String?
-  domain        String?        @unique  // Domain is now part of business
+  domain        String?        @unique
   
   // Business details
   address       String?
@@ -83,10 +83,15 @@ model Business {
   customers     Customer[]
   transactions  Transaction[]
   subscription  Subscription?
+  
+  // Production relations
+  productions   Production[]
+  formulas      ProductionFormula[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
+
 
 model BusinessUser {
   id          String       @id @default(cuid())
@@ -102,46 +107,49 @@ model BusinessUser {
 
   @@unique([businessId, userId])
 }
-
-
-
 model Product {
-  id          String        @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
-  sku         String?       @unique
-  barcode     String?       @unique
+  sku         String?    @unique
+  barcode     String?    @unique
   description String?
   price       Float
   cost        Float
   quantity    Int
-  minQuantity Int          @default(0)
-  
+  minQuantity Int       @default(0)
   businessId  String
-  business    Business      @relation(fields: [businessId], references: [id])
-  categoryId  String?
-  category    Category?     @relation(fields: [categoryId], references: [id])
+  categoryId  String    
   
+  // Relations
+  category    Category  @relation(fields: [categoryId], references: [id])
+  business    Business  @relation(fields: [businessId], references: [id])
   transactions TransactionItem[]
   
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  // Production relations
+  usedInProductions MaterialUsage[]     // When this product is used in production
+  producedBy        ProductionFormula[] // When this product is produced by a formula
+  usedInFormulas    FormulaMaterial[]   @relation("ProductAsMaterial")
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([businessId])
+  @@index([categoryId])
 }
 
 model Category {
   id          String    @id @default(cuid())
   name        String
   description String?
-  
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id])
-  products    Product[]
-  
+  products    Product[] // Changed to one-to-many relation
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@unique([businessId, name])
+  @@index([businessId])
 }
-
 model Supplier {
   id          String        @id @default(cuid())
   name        String
@@ -173,6 +181,146 @@ model Customer {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
+
+model Production {
+  id            String            @id @default(cuid())
+  name          String
+  description   String?
+  status        ProductionStatus  @default(PLANNED)
+  
+  businessId    String
+  business      Business          @relation(fields: [businessId], references: [id])
+  
+  formulaId     String
+  formula       ProductionFormula @relation(fields: [formulaId], references: [id])
+  
+  targetQuantity Float?
+  actualQuantity Float?
+  estimatedCost  Float?
+  actualCost     Float?
+  
+  startDate     DateTime?
+  endDate       DateTime?
+  
+  steps         ProductionStep[]
+  materialUsage MaterialUsage[]
+  laborRecords  LaborRecord[]
+  qualityChecks QualityCheck[]
+  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([businessId])
+  @@index([formulaId])
+}
+
+model ProductionStep {
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  status        ProductionStatus @default(PLANNED)
+  productionId  String
+  production    Production       @relation(fields: [productionId], references: [id])
+  orderIndex    Int
+  startDate     DateTime?
+  endDate       DateTime?
+  notes         String?
+  result        String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model ProductionFormula {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  businessId  String
+  business    Business     @relation(fields: [businessId], references: [id])
+  
+  // The product this formula produces
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id])
+  
+  // Expected materials and their quantities
+  materials   FormulaMaterial[]
+  productions Production[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  @@index([productId])
+}
+model FormulaMaterial {
+  id          String            @id @default(cuid())
+  formulaId   String
+  formula     ProductionFormula @relation(fields: [formulaId], references: [id])
+  
+  materialId  String
+  material    Product           @relation("ProductAsMaterial", fields: [materialId], references: [id])
+  
+  quantity    Float
+  unit        String
+  
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([formulaId])
+  @@index([materialId])
+}
+
+model MaterialUsage {
+  id            String    @id @default(cuid())
+  productionId  String
+  production    Production @relation(fields: [productionId], references: [id])
+  materialId    String
+  material      Product    @relation(fields: [materialId], references: [id])
+  targetQuantity Float?
+  actualQuantity Float
+  unit          String    // e.g., "kg", "liters", "pieces"
+  costPerUnit   Float
+  totalCost     Float
+  usageDate     DateTime
+  notes         String?
+  qualityStatus MaterialQualityStatus @default(GOOD)
+  wasteQuantity Float?
+  wasteReason   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model LaborRecord {
+  id           String    @id @default(cuid())
+  productionId String
+  production   Production @relation(fields: [productionId], references: [id])
+  workerId     String    // Could be linked to an Employee model in the future
+  workerName   String
+  taskType     LaborTaskType
+  startTime    DateTime
+  endTime      DateTime?
+  hoursWorked  Float?
+  hourlyRate   Float
+  totalCost    Float
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model QualityCheck {
+  id           String    @id @default(cuid())
+  productionId String
+  production   Production @relation(fields: [productionId], references: [id])
+  checkType    QualityCheckType
+  status       QualityStatus @default(PENDING)
+  checkedBy    String
+  checkedAt    DateTime
+  parameters   Json?     // Flexible storage for different quality parameters
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
 
 model Transaction {
   id            String            @id @default(cuid())
@@ -317,4 +465,44 @@ enum SubscriptionStatus {
   ACTIVE
   EXPIRED
   CANCELLED
+}
+
+enum MaterialQualityStatus {
+  GOOD
+  DAMAGED
+  EXPIRED
+  CONTAMINATED
+  BELOW_STANDARD
+}
+enum ProductionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+enum LaborTaskType {
+  PREPARATION
+  PROCESSING
+  QUALITY_CHECK
+  PACKAGING
+  MAINTENANCE
+  CLEANING
+  OTHER
+}
+
+enum QualityCheckType {
+  VISUAL_INSPECTION
+  MEASUREMENT
+  CHEMICAL_TEST
+  TASTE_TEST
+  EQUIPMENT_CHECK
+  SAFETY_CHECK
+}
+
+enum QualityStatus {
+  PENDING
+  PASSED
+  FAILED
+  NEEDS_REVIEW
 }
