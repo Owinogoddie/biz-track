@@ -46,27 +46,38 @@ export function StageModal({ productionId, stage, onClose, onSuccess }: StageMod
 
   async function onSubmit(data: StageFormValues) {
     setIsLoading(true)
-    const stageInput: CreateStageInput = {
-      ...data,
-      productionId,
-    }
+    try {
+      const stageInput: CreateStageInput = {
+        name: data.name,
+        description: data.description,
+        status: data.status as StageStatus,
+        order: data.order,
+        productionId,
+      }
 
-    const result = stage 
-      ? await updateStage(stage.id, stageInput)
-      : await createStage(stageInput)
-    
-    if (result.success) {
-      toast({
-        title: `Stage ${stage ? 'updated' : 'created'}!`,
-        description: `Stage has been ${stage ? 'updated' : 'created'} successfully.`,
-      })
-      onSuccess?.()
-      onClose?.()
-    } else {
+      const result = stage 
+        ? await updateStage(stage.id, stageInput)
+        : await createStage(stageInput)
+      
+      if (result.success) {
+        toast({
+          title: `Stage ${stage ? 'updated' : 'created'}!`,
+          description: `Stage has been ${stage ? 'updated' : 'created'} successfully.`,
+        })
+        onSuccess?.()
+        onClose?.()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error,
+        })
+      }
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: result.error,
+        description: 'An unexpected error occurred',
       })
     }
     setIsLoading(false)

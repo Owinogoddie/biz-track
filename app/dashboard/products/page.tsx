@@ -8,6 +8,7 @@ import { useProductStore } from '@/store/useProductStore'
 import { getProducts } from '@/app/actions/product'
 import { CreateProductModal } from './_components/create-product-modal'
 import { columns } from './_components/columns'
+import { ColumnDef } from '@tanstack/react-table'
 export type ProductWithCategory = {
   id: string
   name: string
@@ -61,7 +62,7 @@ const Products = () => {
       </div>
       
       <DataTable<ProductWithCategory, unknown>
-        columns={columns} 
+        columns={columns as ColumnDef<ProductWithCategory, unknown>[]} 
         data={products} 
         searchKey="name"
         toolbar={toolbar}

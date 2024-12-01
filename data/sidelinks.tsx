@@ -176,7 +176,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Create Sale',
         label: '',
-        href: '/dashboard/sales/create',
+        href: '/dashboard/sales',
         icon: <IconShoppingCart size={18} />,
       },
     ]

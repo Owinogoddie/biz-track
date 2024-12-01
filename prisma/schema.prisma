@@ -22,6 +22,8 @@ model User {
   businesses       BusinessUser[]    // User can belong to multiple businesses
   ownedBusinesses  Business[]        // Businesses owned by user
   
+  sales         Sale[]
+  
   sessions        Session[]
   oauthAccounts   OAuthAccount[]
   createdAt       DateTime          @default(now())
@@ -84,11 +86,12 @@ model Business {
   transactions  Transaction[]
   productions   Production[]
   subscription  Subscription?
-  
+  sales         Sale[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
+
 
 model BusinessUser {
   id          String       @id @default(cuid())
@@ -123,6 +126,7 @@ model Product {
   category    Category  @relation(fields: [categoryId], references: [id])
   business    Business  @relation(fields: [businessId], references: [id])
   transactions TransactionItem[]
+  saleItems   SaleItem[]
   
   // Production relations
   productions Production[] 
@@ -145,6 +149,43 @@ model Category {
 
   @@unique([businessId, name])
   @@index([businessId])
+}
+
+model Sale {
+  id            String         @id @default(cuid())
+  total         Float
+  businessId    String
+  sellerId      String
+  status        SaleStatus    @default(COMPLETED)
+  items         SaleItem[]
+  business      Business      @relation(fields: [businessId], references: [id])
+  seller        User          @relation(fields: [sellerId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([businessId])
+  @@index([sellerId])
+}
+
+model SaleItem {
+  id          String    @id @default(cuid())
+  saleId      String
+  productId   String
+  quantity    Int
+  price       Float
+  sale        Sale      @relation(fields: [saleId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
 model Supplier {
   id          String        @id @default(cuid())
