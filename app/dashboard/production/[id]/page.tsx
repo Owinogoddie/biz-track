@@ -1,154 +1,120 @@
-"use client"
+'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { StageList } from './_components/stage-list'
 import { useToast } from '@/hooks/use-toast'
-import { Production } from '@/types/production'
-import { getProductions } from '@/app/actions/production'
-import { MaterialsTab } from '../_components/tabs/materials-tab'
-import { LaborTab } from '../_components/tabs/labor-tab'
-import { QualityTab } from '../_components/tabs/quality-tab'
-import { StepsTab } from '../_components/tabs/steps-tab'
-import { useBusinessStore } from '@/store/useBusinessStore'
-import { useRouter } from 'next/navigation'
-import { Pencil } from 'lucide-react'
-import { EditProductionModal } from '../_components/EditProductionModal'
+import { Production, Stage } from '@prisma/client'
+import { getProductionWithDetails } from '@/app/actions/production'
+import { ArrowLeft } from 'lucide-react'
 
-export default function ProductionPage() {
+const ProductionDetail = () => {
   const params = useParams()
-  const id = params.id as string
   const router = useRouter()
   const { toast } = useToast()
-  const [production, setProduction] = useState<Production | null>(null)
-  const { currentBusiness } = useBusinessStore()
-  const [showEditModal, setShowEditModal] = useState(false)
+  const [production, setProduction] = useState<Production & { stages: Stage[] } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchProduction = async () => {
-      if (!currentBusiness) return
-      
-      const result = await getProductions(currentBusiness.id)
-      if (result.success) {
-        const found = result.productions.find(p => p.id === id)
-        if (found) {
-          setProduction(found)
+      try {
+        const result = await getProductionWithDetails(params.id as string)
+        if (result.success) {
+          setProduction(result.production)
         } else {
           toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Production not found'
+            description: result.error
           })
         }
-      } else {
+      } catch (error) {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to fetch production details'
+          description: 'Failed to load production details'
         })
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchProduction()
-  }, [currentBusiness, id, toast])
+  }, [params.id, toast])
 
-  const handleEditSuccess = () => {
-    // Refresh the production data after successful edit
-    if (currentBusiness) {
-      getProductions(currentBusiness.id).then(result => {
-        if (result.success) {
-          const updated = result.productions.find(p => p.id === id)
-          if (updated) {
-            setProduction(updated)
-          }
-        }
-      })
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-lg text-muted-foreground">Loading...</div>
+      </div>
+    )
   }
 
   if (!production) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-lg text-muted-foreground">Production not found</div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{production.name}</h1>
-          <p className="text-muted-foreground">{production.description}</p>
+    <div className="container mx-auto px-4 py-6 space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">{production.productName || 'Unnamed Production'}</h2>
+          <p className="text-muted-foreground">
+            Batch Number: {production.batchNumber}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowEditModal(true)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" onClick={() => router.back()}>
-            Back to Productions
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => router.push('/dashboard/productions')}
+          className="w-full sm:w-auto"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Productions
+        </Button>
       </div>
 
-      {showEditModal && (
-        <EditProductionModal
-          production={production}
-          onClose={() => setShowEditModal(false)}
-          onSuccess={handleEditSuccess}
-        />
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{production.status}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Start Date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">
+              {new Date(production.startDate).toLocaleDateString()}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-lg">End Date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">
+              {production.endDate 
+                ? new Date(production.endDate).toLocaleDateString()
+                : 'Not completed'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Production Overview</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Status</p>
-            <p className="font-medium">{production.status}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Target Quantity</p>
-            <p className="font-medium">{production.targetQuantity || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Actual Quantity</p>
-            <p className="font-medium">{production.actualQuantity || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Cost</p>
-            <p className="font-medium">${production.actualCost?.toFixed(2) || 'N/A'}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="materials" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="materials">Materials</TabsTrigger>
-          <TabsTrigger value="labor">Labor</TabsTrigger>
-          <TabsTrigger value="quality">Quality</TabsTrigger>
-          <TabsTrigger value="steps">Steps</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="materials">
-          <MaterialsTab production={production} />
-        </TabsContent>
-        
-        <TabsContent value="labor">
-          <LaborTab production={production} />
-        </TabsContent>
-        
-        <TabsContent value="quality">
-          <QualityTab production={production} />
-        </TabsContent>
-        
-        <TabsContent value="steps">
-          <StepsTab production={production} />
-        </TabsContent>
-      </Tabs>
+      <StageList productionId={production.id} />
     </div>
   )
 }
+
+export default ProductionDetail

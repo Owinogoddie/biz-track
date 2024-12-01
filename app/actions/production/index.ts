@@ -1,269 +1,156 @@
 'use server'
-
-export interface CreateProductionInput {
-  name: string
-  description?: string
-  businessId: string
-  formulaId: string
-  targetQuantity?: number
-  estimatedCost?: number
-  status?: ProductionStatus
-}
-import prisma  from '@/lib/prisma'
-import { 
-    MaterialQualityStatus, 
-    ProductionStatus, 
-    LaborTaskType, 
-    QualityCheckType, 
-    QualityStatus,
-    Production 
-  } from '@/types/production'
+import prisma from '@/lib/prisma'
 import { getUserAction } from '../auth'
 
-export async function createProduction(data: {
-    name: string
-    description?: string
-    businessId: string
-    formulaId: string
-    targetQuantity?: number
-    estimatedCost?: number
-  }) {
-    console.log(data)
-    try {
-      const user = await getUserAction()
-      
-      if (!user) {
-        return { success: false, error: 'User not authenticated' }
-      }
-  
-      const production = await prisma.production.create({
-        data: {
-          ...data,
-          status: 'PLANNED' as ProductionStatus,
-        },
-        include: {
-          formula: {
-            include: {
-              product: true,
-              materials: {
-                include: {
-                  material: true
-                }
-              }
-            }
-          },
-          steps: true,
-          materialUsage: {
-            include: {
-              material: true
-            }
-          },
-          laborRecords: true,
-          qualityChecks: true
-        }
-      })
-  
-      return { success: true, production }
-    } catch (error) {
-      console.log(error)
-      return { success: false, error: 'Failed to create production' }
-    }
-  }
-  export async function updateProduction(id: string, data: Partial<CreateProductionInput>) {
-    try {
-      const userResult = await getUserAction()
-      
-      if (!userResult.success || !userResult.user) {
-        return { success: false, error: 'User not authenticated' }
-      }
-  
-      const production = await prisma.production.update({
-        where: { id },
-        data: {
-          name: data.name,
-          description: data.description,
-          formulaId: data.formulaId,
-          targetQuantity: data.targetQuantity,
-          estimatedCost: data.estimatedCost,
-          status: data.status,
-        }
-      })
-  
-      return { success: true, production }
-    } catch (error: any) {
-      return { success: false, error: 'Failed to update production' }
-    }
-  }
-  export async function getProductions(businessId: string): Promise<{ success: boolean; productions?: Production[]; error?: string }> {
-    try {
-      const productions = await prisma.production.findMany({
-        where: { businessId },
-        include: {
-          formula: {
-            include: {
-              product: true,
-              materials: {
-                include: {
-                  material: true
-                }
-              }
-            }
-          },
-          steps: true,
-          materialUsage: {
-            include: {
-              material: true
-            }
-          },
-          laborRecords: true,
-          qualityChecks: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      }) as unknown as Production[]
-      
-      return { success: true, productions }
-    } catch (error) {
-      return { success: false, error: 'Failed to fetch productions' }
-    }
-  }
-  
+export interface CreateProductionInput {
+  batchNumber: string
+  productName: string
+  startDate: Date
+  endDate?: Date
+  status: string
+  businessId: string
+  productId?: string
+}
 
-export async function recordMaterialUsage(data: {
-  productionId: string
-  materialId: string
-  actualQuantity: number
-  unit: string
-  costPerUnit: number
-  notes?: string
-  qualityStatus?: MaterialQualityStatus
-  wasteQuantity?: number
-  wasteReason?: string
-}) {
+export async function createProduction(data: CreateProductionInput) {
+  // console.log(data)
   try {
-    const materialUsage = await prisma.materialUsage.create({
+    const userResult = await getUserAction()
+    
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const production = await prisma.production.create({
       data: {
         ...data,
-        totalCost: data.actualQuantity * data.costPerUnit,
-        usageDate: new Date(),
-        qualityStatus: data.qualityStatus || MaterialQualityStatus.GOOD
+        stages: {
+          create: [
+            {
+              name: "Initial Stage",
+              order: 1,
+              status: "PENDING"
+            }
+          ]
+        }
       },
       include: {
-        material: true
+        stages: true,
+        product: true
       }
     })
-    return { success: true, materialUsage }
-  } catch (error) {
-    return { success: false, error: 'Failed to record material usage' }
+
+    return { success: true, production }
+  } catch (error: any) {
+    // console.log(error)
+    if (error.code === 'P2002') {
+      return { success: false, error: 'A production with this batch number already exists' }
+    }
+    return { success: false, error: 'Failed to create production' }
   }
 }
 
-
-export async function recordLabor(data: {
-  productionId: string
-  workerId: string
-  workerName: string
-  taskType: LaborTaskType
-  startTime: Date
-  endTime?: Date
-  hourlyRate: number
-  notes?: string
-}) {
+export async function getProductions(businessId: string) {
   try {
-    // Validate required fields
-    if (!data.productionId || !data.workerId || !data.workerName || !data.taskType || !data.startTime || !data.hourlyRate) {
-      console.error('Missing required fields:', data);
-      return { success: false, error: 'Missing required fields' };
+    const userResult = await getUserAction()
+    
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
     }
 
-    const hoursWorked = data.endTime 
-      ? (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60 * 60)
-      : null;
-
-    // Log the data being sent to the database
-    console.log('Creating labor record with data:', {
-      ...data,
-      hoursWorked,
-      totalCost: hoursWorked ? hoursWorked * data.hourlyRate : 0
-    });
-
-    const laborRecord = await prisma.laborRecord.create({
-      data: {
-        productionId: data.productionId,
-        workerId: data.workerId,
-        workerName: data.workerName,
-        taskType: data.taskType,
-        startTime: data.startTime,
-        endTime: data.endTime || null,
-        hourlyRate: data.hourlyRate,
-        hoursWorked,
-        totalCost: hoursWorked ? hoursWorked * data.hourlyRate : 0,
-        notes: data.notes || null
+    const productions = await prisma.production.findMany({
+      where: {
+        businessId
+      },
+      include: {
+        stages: true,
+        product: true
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
-    });
+    })
 
-    return { success: true, laborRecord };
+    return { success: true, productions }
   } catch (error) {
-    // Log the actual error
-    console.error('Error creating labor record:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to record labor'
-    };
+    return { success: false, error: 'Failed to fetch productions' }
+  }
+}
+export async function getProductionWithDetails(id: string) {
+  try {
+    const userResult = await getUserAction()
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const production = await prisma.production.findUnique({
+      where: { id },
+      include: {
+        stages: {
+          include: {
+            resources: true,
+            labor: {
+              include: {
+                worker: true
+              }
+            }
+          },
+          orderBy: {
+            order: 'asc'
+          }
+        }
+      }
+    })
+
+    if (!production) {
+      return { success: false, error: 'Production not found' }
+    }
+
+    return { success: true, production }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch production details' }
+  }
+}
+export async function updateProduction(id: string, data: Partial<CreateProductionInput>) {
+  try {
+    const userResult = await getUserAction()
+    
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const production = await prisma.production.update({
+      where: { id },
+      data,
+      include: {
+        stages: true,
+        product: true
+      }
+    })
+
+    return { success: true, production }
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return { success: false, error: 'A production with this batch number already exists' }
+    }
+    return { success: false, error: 'Failed to update production' }
   }
 }
 
-  export async function recordQualityCheck(data: {
-    productionId: string
-    checkType: QualityCheckType
-    checkedBy: string
-    parameters?: any
-    notes?: string
-    status?: QualityStatus
-  }) {
-    try {
-      const qualityCheck = await prisma.qualityCheck.create({
-        data: {
-          ...data,
-          checkedAt: new Date(),
-          status: data.status || QualityStatus.PENDING
-        }
-      })
-      return { success: true, qualityCheck }
-    } catch (error) {
-      return { success: false, error: 'Failed to record quality check' }
+export async function deleteProduction(id: string) {
+  try {
+    const userResult = await getUserAction()
+    
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
     }
+
+    await prisma.production.delete({
+      where: { id }
+    })
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: 'Failed to delete production' }
   }
-  
-  export async function updateProductionStatus(
-    productionId: string,
-    status: ProductionStatus,
-    notes?: string
-  ) {
-    try {
-      const production = await prisma.production.update({
-        where: { id: productionId },
-        data: { 
-          status,
-          steps: {
-            create: {
-              name: `Status updated to ${status}`,
-              status,
-              notes,
-              orderIndex: 0
-            }
-          }
-        },
-        include: {
-          steps: true,
-          materialUsage: true,
-          laborRecords: true,
-          qualityChecks: true
-        }
-      })
-      return { success: true, production }
-    } catch (error) {
-      return { success: false, error: 'Failed to update production status' }
-    }
-  }
+}

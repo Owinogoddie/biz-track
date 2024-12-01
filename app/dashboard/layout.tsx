@@ -13,50 +13,58 @@ import { useEffect, useState } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { getBusinesses } from '../actions/business'
 import { useRouter } from 'next/navigation'
+import { LoadingScreen } from '@/components/loading-screen'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [isCollapsed, setIsCollapsed] = useIsCollapsed()
-  const { hasBusiness, setHasBusiness, setBusinesses, setCurrentBusiness } = useBusinessStore()
-  const { user, isLoading } = useUser()
-  const [showDebug, setShowDebug] = useState(false)
-  const [forceShowModal, setForceShowModal] = useState(false)
-  const router = useRouter()
+  const [isCollapsed, setIsCollapsed] = useIsCollapsed();
+  const { hasBusiness, setHasBusiness, setBusinesses, setCurrentBusiness } = useBusinessStore();
+  const { user, isLoading } = useUser();
+  const [showDebug, setShowDebug] = useState(false);
+  const [forceShowModal, setForceShowModal] = useState(false);
+  const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login')
-      return
+      router.push("/login");
+      return;
     }
 
     const loadBusinesses = async () => {
-      if (!user) return
+      if (!user) return;
       
-      const result = await getBusinesses()
-      console.log('Businesses loaded:', result)
-      if (result.success) {
-        setBusinesses(result.businesses)
-        setHasBusiness(result.businesses.length > 0)
-        if (result.businesses.length > 0) {
-          setCurrentBusiness(result.businesses[0])
+      try {
+        const result = await getBusinesses();
+        console.log("Businesses loaded:", result);
+        if (result.success) {
+          setBusinesses(result.businesses);
+          setHasBusiness(result.businesses.length > 0);
+          if (result.businesses.length > 0) {
+            setCurrentBusiness(result.businesses[0]);
+          }
         }
+      } finally {
+        setIsLoadingBusinesses(false);
       }
-    }
+    };
     
     if (!isLoading) {
-      loadBusinesses()
+      loadBusinesses();
     }
-  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router])
+  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router]);
 
-  // If still loading or no user, show nothing
-  if (isLoading || !user) {
-    return null
+  if (isLoading || isLoadingBusinesses) {
+    return <LoadingScreen />;
   }
 
-
+  // If no user, show nothing (redirect happens in useEffect)
+  if (!user) {
+    return null;
+  }
   return (
     <div className='relative h-full overflow-hidden bg-background'>
       <SkipToMain />

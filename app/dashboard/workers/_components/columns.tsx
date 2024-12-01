@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
+import { Worker, PaymentPeriod } from '@prisma/client'
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header'
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions'
-import { EditProductionModal } from './edit-production-modal'
+import { EditWorkerModal } from './edit-worker-modal'
 import { useToast } from '@/hooks/use-toast'
-import { useProductionStore } from '@/store/useProductionStore'
-import { deleteProduction } from '@/app/actions/production'
-import { useRouter } from 'next/navigation'
+import { useWorkerStore } from '@/store/useWorkerStore'
+import { deleteWorker } from '@/app/actions/worker'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,66 +22,55 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
 
-export const columns: ColumnDef<any>[] = [
+export const columns: ColumnDef<Worker>[] = [
   {
-    accessorKey: 'batchNumber',
+    id: 'name',
+    accessorFn: (row) => `${row.firstName} ${row.lastName}`,
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Batch Number" />
-    ),
-    cell: ({ row }) => {
-      const router = useRouter()
-      return (
-        <div
-          onClick={() => router.push(`/dashboard/${row.original.id}`)}
-          className="cursor-pointer hover:underline text-primary"
-        >
-          {row.getValue('batchNumber')}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'productName',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Product" />
+      <DataTableColumnHeader column={column} title="Name" />
     ),
   },
   {
-    accessorKey: 'status',
+    id: 'email',
+    accessorKey: 'email',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
+      <DataTableColumnHeader column={column} title="Email" />
+    ),
+  },
+  {
+    id: 'role',
+    accessorKey: 'role',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Role" />
+    ),
+  },
+  {
+    id: 'paymentPeriod',
+    accessorKey: 'paymentPeriod',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Payment Period" />
     ),
     cell: ({ row }) => {
-      const status = row.getValue('status') as string
+      const period = row.getValue('paymentPeriod') as PaymentPeriod
       return (
-        <Badge variant={
-          status === 'COMPLETED' ? 'success' :
-          status === 'IN_PROGRESS' ? 'warning' :
-          'secondary'
-        }>
-          {status}
+        <Badge variant="secondary">
+          {period.toLowerCase()}
         </Badge>
       )
     },
   },
   {
-    accessorKey: 'startDate',
+    id: 'rate',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Start Date" />
+      <DataTableColumnHeader column={column} title="Rate" />
     ),
     cell: ({ row }) => {
-      const date = new Date(row.getValue('startDate'))
-      return <div>{date.toLocaleDateString()}</div>
-    },
-  },
-  {
-    accessorKey: 'stages',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Stages" />
-    ),
-    cell: ({ row }) => {
-      const stages = row.getValue('stages') as any[]
-      return <div>{stages.length} stages</div>
+      const worker = row.original
+      const rate = worker.paymentPeriod === PaymentPeriod.HOURLY ? worker.hourlyRate :
+                  worker.paymentPeriod === PaymentPeriod.DAILY ? worker.dailyRate :
+                  worker.monthlyRate
+      
+      return rate ? `$${rate}/${worker.paymentPeriod.toLowerCase().slice(0, -2)}` : '-'
     },
   },
   {
@@ -91,18 +80,17 @@ export const columns: ColumnDef<any>[] = [
       const [showDeleteDialog, setShowDeleteDialog] = useState(false)
       const [isDeleting, setIsDeleting] = useState(false)
       const { toast } = useToast()
-      const { removeProduction } = useProductionStore()
-      const router = useRouter()
+      const { removeWorker } = useWorkerStore()
 
       const handleDelete = async () => {
         setIsDeleting(true)
-        const result = await deleteProduction(row.original.id)
+        const result = await deleteWorker(row.original.id)
         
         if (result.success) {
-          removeProduction(row.original.id)
+          removeWorker(row.original.id)
           toast({
-            title: 'Production deleted',
-            description: 'Production record has been deleted successfully.',
+            title: 'Worker deleted',
+            description: 'Worker has been deleted successfully.',
           })
         } else {
           toast({
@@ -116,10 +104,6 @@ export const columns: ColumnDef<any>[] = [
       }
 
       const actions = [
-        {
-          label: 'View Details',
-          action: () => router.push(`/dashboard/production/${row.original.id}`)
-        },
         {
           label: 'Edit',
           action: () => setShowEditModal(true)
@@ -135,8 +119,8 @@ export const columns: ColumnDef<any>[] = [
         <>
           <DataTableRowActions row={row} actions={actions} />
           {showEditModal && (
-            <EditProductionModal
-              production={row.original}
+            <EditWorkerModal
+              worker={row.original}
               onClose={() => setShowEditModal(false)}
             />
           )}
@@ -145,7 +129,7 @@ export const columns: ColumnDef<any>[] = [
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the production record and all associated data.
+                  This action cannot be undone. This will permanently delete the worker record.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

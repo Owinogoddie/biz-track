@@ -1,3 +1,4 @@
+'use client'
 import * as z from 'zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -6,69 +7,60 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { useBusinessStore } from '@/store/useBusinessStore'
-import { useProductionStore } from '@/store/useProductionStore'
-import { createProduction, type CreateProductionInput } from '@/app/actions/production'
+import { createStage, updateStage, type CreateStageInput } from '@/app/actions/stage'
 import { Loader2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Stage, StageStatus } from '@prisma/client'
 
-const productionSchema = z.object({
-  batchNumber: z.string().min(2, 'Batch number must be at least 2 characters'),
-  productName: z.string().min(2, 'Product name must be at least 2 characters'),
-  startDate: z.string(),
+const stageSchema = z.object({
+  name: z.string().min(2, 'Stage name must be at least 2 characters'),
+  description: z.string().optional(),
   status: z.string(),
+  order: z.number().min(1),
 })
 
-type ProductionFormValues = z.infer<typeof productionSchema>
+type StageFormValues = z.infer<typeof stageSchema>
 
-interface CreateProductionModalProps {
+interface StageModalProps {
+  productionId: string
+  stage?: Stage
   onClose?: () => void
+  onSuccess?: () => void
 }
 
-export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
+export function StageModal({ productionId, stage, onClose, onSuccess }: StageModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const { currentBusiness } = useBusinessStore()
-  const { addProduction } = useProductionStore()
 
-  const form = useForm<ProductionFormValues>({
-    resolver: zodResolver(productionSchema),
+  const form = useForm<StageFormValues>({
+    resolver: zodResolver(stageSchema),
     defaultValues: {
-      batchNumber: '',
-      productName: '',
-      startDate: new Date().toISOString().split('T')[0],
-      status: 'PENDING',
+      name: stage?.name || '',
+      description: stage?.description || '',
+      status: stage?.status || 'PENDING',
+      order: stage?.order || 1,
     },
   })
 
-  async function onSubmit(data: ProductionFormValues) {
-    if (!currentBusiness) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No business selected',
-      })
-      return
+  async function onSubmit(data: StageFormValues) {
+    setIsLoading(true)
+    const stageInput: CreateStageInput = {
+      ...data,
+      productionId,
     }
 
-    setIsLoading(true)
-    const productionInput: CreateProductionInput = {
-      batchNumber: data.batchNumber,
-      productName: data.productName,
-      startDate: new Date(data.startDate),
-      status: data.status,
-      businessId: currentBusiness.id,
-    }
-  
-    const result = await createProduction(productionInput)
+    const result = stage 
+      ? await updateStage(stage.id, stageInput)
+      : await createStage(stageInput)
     
     if (result.success) {
-      addProduction(result.production)
       toast({
-        title: 'Production started!',
-        description: 'Your production has been created successfully.',
+        title: `Stage ${stage ? 'updated' : 'created'}!`,
+        description: `Stage has been ${stage ? 'updated' : 'created'} successfully.`,
       })
+      onSuccess?.()
       onClose?.()
     } else {
       toast({
@@ -84,21 +76,21 @@ export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Start New Production</DialogTitle>
+          <DialogTitle>{stage ? 'Edit' : 'Add'} Stage</DialogTitle>
           <DialogDescription>
-            Create a new production batch to track your manufacturing process.
+            {stage ? 'Make changes to the' : 'Add a new'} production stage.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="batchNumber"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Batch Number</FormLabel>
+                  <FormLabel>Stage Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter batch number" {...field} />
+                    <Input placeholder="Enter stage name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,25 +98,12 @@ export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
             />
             <FormField
               control={form.control}
-              name="productName"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Name</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter product name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
+                    <Textarea placeholder="Describe this stage" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,15 +126,34 @@ export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                       <SelectItem value="COMPLETED">Completed</SelectItem>
                       <SelectItem value="ON_HOLD">On Hold</SelectItem>
+                      <SelectItem value="SKIPPED">Skipped</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="order"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Order</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min={1}
+                      {...field}
+                      onChange={e => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Start Production
+              {stage ? 'Update' : 'Create'} Stage
             </Button>
           </form>
         </Form>

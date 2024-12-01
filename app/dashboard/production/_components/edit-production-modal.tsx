@@ -7,9 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { useBusinessStore } from '@/store/useBusinessStore'
 import { useProductionStore } from '@/store/useProductionStore'
-import { createProduction, type CreateProductionInput } from '@/app/actions/production'
+import { updateProduction } from '@/app/actions/production'
 import { Loader2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -22,52 +21,39 @@ const productionSchema = z.object({
 
 type ProductionFormValues = z.infer<typeof productionSchema>
 
-interface CreateProductionModalProps {
+interface EditProductionModalProps {
+  production: any
   onClose?: () => void
 }
 
-export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
+export function EditProductionModal({ production, onClose }: EditProductionModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const { currentBusiness } = useBusinessStore()
-  const { addProduction } = useProductionStore()
+  const { updateProduction: updateProductionStore } = useProductionStore()
 
   const form = useForm<ProductionFormValues>({
     resolver: zodResolver(productionSchema),
     defaultValues: {
-      batchNumber: '',
-      productName: '',
-      startDate: new Date().toISOString().split('T')[0],
-      status: 'PENDING',
+      batchNumber: production.batchNumber,
+      productName: production.productName,
+      startDate: new Date(production.startDate).toISOString().split('T')[0],
+      status: production.status,
     },
   })
 
   async function onSubmit(data: ProductionFormValues) {
-    if (!currentBusiness) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No business selected',
-      })
-      return
-    }
-
     setIsLoading(true)
-    const productionInput: CreateProductionInput = {
-      batchNumber: data.batchNumber,
-      productName: data.productName,
+    const result = await updateProduction(production.id, {
+      ...data,
       startDate: new Date(data.startDate),
-      status: data.status,
-      businessId: currentBusiness.id,
-    }
-  
-    const result = await createProduction(productionInput)
+      businessId: production.businessId,
+    })
     
     if (result.success) {
-      addProduction(result.production)
+      updateProductionStore(result.production)
       toast({
-        title: 'Production started!',
-        description: 'Your production has been created successfully.',
+        title: 'Production updated!',
+        description: 'Production details have been updated successfully.',
       })
       onClose?.()
     } else {
@@ -84,9 +70,9 @@ export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Start New Production</DialogTitle>
+          <DialogTitle>Edit Production</DialogTitle>
           <DialogDescription>
-            Create a new production batch to track your manufacturing process.
+            Update the production details and status.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -155,7 +141,7 @@ export function CreateProductionModal({ onClose }: CreateProductionModalProps) {
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Start Production
+              Update Production
             </Button>
           </form>
         </Form>
