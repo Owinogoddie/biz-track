@@ -170,7 +170,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Sales History',
         label: '',
-        href: '/dashboard/sales/history',
+        href: '/dashboard/reports/sales',
         icon: <IconChartBar size={18} />,
       },
       {
