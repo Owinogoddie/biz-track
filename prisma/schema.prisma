@@ -8,7 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// uth-related models
+// Auth-related models
 model User {
   id               String            @id @unique @default(uuid())
   email            String            @unique
@@ -82,14 +82,13 @@ model Business {
   suppliers     Supplier[]
   customers     Customer[]
   transactions  Transaction[]
-  productions Production[]
+  productions   Production[]
   subscription  Subscription?
   
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
-
 
 model BusinessUser {
   id          String       @id @default(cuid())
@@ -105,6 +104,7 @@ model BusinessUser {
 
   @@unique([businessId, userId])
 }
+
 model Product {
   id          String     @id @default(cuid())
   name        String
