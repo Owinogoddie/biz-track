@@ -1,45 +1,55 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Minus, Trash2, ShoppingCart } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useBusinessStore } from '@/store/useBusinessStore'
 import { useSaleStore } from '@/store/useSaleStore'
 import { createSale } from '@/app/actions/sale'
 import { getProducts } from '@/app/actions/product'
-import { Product } from '@prisma/client'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Separator } from '@/components/ui/separator'
 import { Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination"
+import { Button } from '@/components/ui/button'
+import { ProductCard } from './_components/ProductCard'
+import { CartSheet } from './_components/CartSheet'
+import { Category, ProductWithCategory } from '@/types/product'
+
+const ITEMS_PER_PAGE = 12
 
 const Sales = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithCategory[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const { currentBusiness } = useBusinessStore()
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart, getTotal } = useSaleStore()
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Fetch products from server
+  // Fetch products and categories from server
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       if (currentBusiness) {
         const result = await getProducts(currentBusiness.id)
         if (result.success) {
           setProducts(result.products)
           setFilteredProducts(result.products)
+          
+          // Fix duplicate categories by using category ID as the unique identifier
+          const uniqueCategories = Array.from(
+            new Map(
+              result.products
+                .filter(product => product.category) // Filter out products without categories
+                .map(product => [product.category?.id, product.category]) // Use category ID as key
+            ).values()
+          ) as Category[]
+          
+          setCategories(uniqueCategories)
         } else {
           toast({
             variant: 'destructive',
@@ -51,18 +61,35 @@ const Sales = () => {
       }
     }
     
-    fetchProducts()
+    fetchData()
   }, [currentBusiness, toast])
 
-  // Filter products based on search term
+  // Filter products based on search term and category
   useEffect(() => {
-    setFilteredProducts(
-      products.filter(product =>
+    let filtered = products
+    
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    )
-  }, [searchTerm, products])
+    }
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(product => product.categoryId === selectedCategory)
+    }
+    
+    setFilteredProducts(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [searchTerm, selectedCategory, products])
+
+  const handleAddToCart = (product: ProductWithCategory) => {
+    addToCart(product)
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+    })
+  }
 
   const handleCompleteSale = async () => {
     if (!currentBusiness || cart.length === 0) return
@@ -78,7 +105,6 @@ const Sales = () => {
     })
 
     if (result.success) {
-      // Refresh products after sale
       const productsResult = await getProducts(currentBusiness.id)
       if (productsResult.success) {
         setProducts(productsResult.products)
@@ -100,6 +126,13 @@ const Sales = () => {
     setIsProcessing(false)
   }
 
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
@@ -110,100 +143,92 @@ const Sales = () => {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-center gap-4 p-4">
+        <div className="w-full sm:flex-1 sm:max-w-md">
           <Input
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="ml-4">
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart ({cart.length})
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Shopping Cart</SheetTitle>
-            </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-12rem)] mt-4">
-              {cart.map((item) => (
-                <div key={item.product.id} className="flex items-center justify-between py-4">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{item.product.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      ${item.product.price.toFixed(2)} each
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => updateQuantity(item.product.id, Math.max(0, item.quantity - 1))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFromCart(item.product.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+        <div className="w-full sm:w-[200px]">
+          <Select 
+            value={selectedCategory || undefined} 
+            onValueChange={(value) => setSelectedCategory(value || null)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
               ))}
-            </ScrollArea>
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-              <div className="flex justify-between mb-4">
-                <span className="font-medium">Total:</span>
-                <span className="font-medium">${getTotal().toFixed(2)}</span>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handleCompleteSale}
-                disabled={cart.length === 0 || isProcessing}
-              >
-                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Complete Sale
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <CartSheet
+          cart={cart}
+          isProcessing={isProcessing}
+          onUpdateQuantity={updateQuantity}
+          onRemoveFromCart={removeFromCart}
+          onCompleteSale={handleCompleteSale}
+          getTotal={getTotal}
+        />
       </div>
 
       <ScrollArea className="flex-1 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredProducts.map((product) => (
-            <Card
+          {paginatedProducts.map((product) => (
+            <ProductCard
               key={product.id}
-              className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => addToCart(product)}
-            >
-              <h3 className="font-medium">{product.name}</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Stock: {product.quantity}
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="font-bold">${product.price.toFixed(2)}</span>
-                <Button size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
+              product={product}
+              onAddToCart={handleAddToCart}
+            />
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <Button
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </ScrollArea>
     </div>
   )

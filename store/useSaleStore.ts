@@ -1,15 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Product } from '@prisma/client'
-
-interface CartItem {
-  product: Product
-  quantity: number
-}
+import { CartItem, ProductWithCategory } from '@/types/product'
 
 interface SaleStore {
   cart: CartItem[]
-  addToCart: (product: Product, quantity?: number) => void
+  addToCart: (product: ProductWithCategory, quantity?: number) => void
   removeFromCart: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -56,7 +51,7 @@ export const useSaleStore = create<SaleStore>()(
       }
     }),
     {
-      name: 'cart-storage', // unique name for localStorage key
+      name: 'cart-storage',
     }
   )
 )
