@@ -87,6 +87,7 @@ model Business {
   productions   Production[]
   subscription  Subscription?
   sales         Sale[]
+  debts Debt[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -379,6 +380,8 @@ model Debt {
   status        DebtStatus  @default(PENDING)
   notes         String?
   
+  businessId    String
+  business      Business          @relation(fields: [businessId], references: [id])
   customerId    String? 
   customerName String?
   customerPhoneNumber String?
@@ -437,6 +440,7 @@ enum TransactionType {
   PURCHASE
   RETURN
   TRANSFER
+  CREDIT
 }
 
 enum TransactionStatus {

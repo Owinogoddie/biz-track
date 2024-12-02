@@ -23,19 +23,17 @@ import {
   IconUsersPlus,
   IconUserSearch,
   IconUserPlus,
-} from '@tabler/icons-react'
-
+} from '@tabler/icons-react';
+import { DollarSign, Receipt, ChartBar } from "lucide-react";
 export interface NavLink {
-  title: string
-  label?: string
-  href: string
-  icon: JSX.Element
+  title: string;
+  label?: string;
+  href: string;
+  icon: JSX.Element;
 }
-
 export interface SideLink extends NavLink {
-  sub?: NavLink[]
+  sub?: NavLink[];
 }
-
 export const sidelinks: SideLink[] = [
   {
     title: 'Dashboard',
@@ -202,6 +200,26 @@ export const sidelinks: SideLink[] = [
     ]
   },
   {
+    title: 'Debt Management',
+    label: '',
+    href: '/dashboard/debts',
+    icon: <DollarSign size={18} />,
+    sub: [
+      {
+        title: 'Overview',
+        label: '',
+        href: '/dashboard/debts',
+        icon: <ChartBar size={18} />,
+      },
+      {
+        title: 'Transactions',
+        label: '',
+        href: '/dashboard/debts',
+        icon: <Receipt size={18} />,
+      }
+    ]
+  },
+  {
     title: 'People',
     label: '',
     href: '/dashboard/people',
@@ -279,4 +297,4 @@ export const sidelinks: SideLink[] = [
     href: '/dashboard/settings',
     icon: <IconSettings size={18} />,
   },
-]
+];
