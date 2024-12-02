@@ -54,12 +54,10 @@ const Products = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-        <p className="text-muted-foreground">
-          Manage your products here
-        </p>
-      </div>
+     <div className="section-heading">
+  <h2>Products</h2>
+  <p>Manage your products here</p>
+</div>
       
       <DataTable<ProductWithCategory, unknown>
         columns={columns as ColumnDef<ProductWithCategory, unknown>[]} 

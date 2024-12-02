@@ -85,12 +85,12 @@ export function LaborList({ stageId, laborEntries, workers, onLaborChange }: Lab
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 gap-4">
+      <div className="flex flex-wrap gap-4">
         {laborEntries.map((labor) => (
-          <Card key={labor.id} className="border shadow-sm">
+          <Card key={labor.id} className="border shadow-sm flex-grow basis-[calc(100%-1rem)] sm:basis-[calc(50%-1rem)] lg:basis-[calc(33.333%-1rem)]">
             <CardHeader className="p-4">
-              <CardTitle className="flex justify-between items-center text-base">
-                <span>
+              <CardTitle className="flex justify-between items-center text-base flex-wrap gap-2">
+                <span className="break-all">
                   {labor.worker.firstName} {labor.worker.lastName}
                   {labor.worker.isCasual && (
                     <Badge variant="outline" className="ml-2">
@@ -120,7 +120,7 @@ export function LaborList({ stageId, laborEntries, workers, onLaborChange }: Lab
                   <p className="font-medium">${labor.rate.toString()} ({labor.periodType.toLowerCase()})</p>
                 </div>
                 {labor.notes && (
-                  <p className="text-sm text-muted-foreground border-t pt-2">{labor.notes}</p>
+                  <p className="text-sm text-muted-foreground border-t pt-2 break-words">{labor.notes}</p>
                 )}
                 <div className="flex justify-end space-x-2">
                   <Button

@@ -73,7 +73,6 @@ export function ResourceList({ stageId, resources, onResourceChange }: ResourceL
         return 'bg-gray-100 text-gray-800'
     }
   }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -89,12 +88,12 @@ export function ResourceList({ stageId, resources, onResourceChange }: ResourceL
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 gap-4">
+      <div className="flex flex-wrap gap-4">
         {resources.map((resource) => (
-          <Card key={resource.id} className="border shadow-sm">
+          <Card key={resource.id} className="border shadow-sm flex-grow basis-[calc(100%-1rem)] sm:basis-[calc(50%-1rem)] lg:basis-[calc(33.333%-1rem)]">
             <CardHeader className="p-4">
-              <CardTitle className="flex justify-between items-center text-base">
-                <span>{resource.name}</span>
+              <CardTitle className="flex justify-between items-center text-base flex-wrap gap-2">
+                <span className="break-all">{resource.name}</span>
                 <Badge variant="secondary" className={getResourceTypeColor(resource.type)}>
                   {resource.type.replace('_', ' ')}
                 </Badge>

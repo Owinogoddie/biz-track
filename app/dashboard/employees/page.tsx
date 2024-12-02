@@ -35,9 +35,9 @@ const Employees = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Employees</h2>
-        <p className="text-muted-foreground">
+     <div className="section-heading">
+        <h2 >Employees</h2>
+        <p >
           Manage your business employees here
         </p>
       </div>

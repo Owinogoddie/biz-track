@@ -35,9 +35,9 @@ const Categories = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
-        <p className="text-muted-foreground">
+      <div className="section-heading">
+        <h2 >Categories</h2>
+        <p >
           Manage your product categories here
         </p>
       </div>

@@ -7,11 +7,17 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      padding: {
+        DEFAULT: '1rem',
+        md: '1.5rem',
+        sm: '0.5rem',
+        lg: '2rem',
+      },
       screens: {
         '2xl': '1400px'
       }
@@ -59,52 +65,28 @@ const config: Config = {
       },
       keyframes: {
         marquee: {
-          from: {
-            transform: 'translateX(0)'
-          },
-          to: {
-            transform: 'translateX(calc(-100% - var(--gap)))'
-          }
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(calc(-100% - var(--gap)))' }
         },
         'marquee-vertical': {
-          from: {
-            transform: 'translateY(0)'
-          },
-          to: {
-            transform: 'translateY(calc(-100% - var(--gap)))'
-          }
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(calc(-100% - var(--gap)))' }
         },
         'caret-blink': {
-          '0%,70%,100%': {
-            opacity: '1'
-          },
-          '20%,50%': {
-            opacity: '0'
-          }
+          '0%,70%,100%': { opacity: '1' },
+          '20%,50%': { opacity: '0' }
         },
         'accordion-down': {
-          from: {
-            height: '0'
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)'
-          }
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' }
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)'
-          },
-          to: {
-            height: '0'
-          }
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' }
         },
         pulse: {
-          '0%, 100%': {
-            boxShadow: '0 0 0 0 var(--pulse-color)'
-          },
-          '50%': {
-            boxShadow: '0 0 0 8px var(--pulse-color)'
-          }
+          '0%, 100%': { boxShadow: '0 0 0 0 var(--pulse-color)' },
+          '50%': { boxShadow: '0 0 0 8px var(--pulse-color)' }
         }
       },
       animation: {

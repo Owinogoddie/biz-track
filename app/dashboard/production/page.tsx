@@ -28,16 +28,16 @@ const Productions = () => {
   }, [currentBusiness, setProductions])
 
   const toolbar = (
-    <Button onClick={() => setShowCreateModal(true)}>
+    <Button onClick={() => setShowCreateModal(true)} className="text-xl md:text-2xl">
       <Plus className="mr-2 h-4 w-4" /> Start New Production
     </Button>
   )
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Production Management</h2>
-        <p className="text-muted-foreground">
+      <div className="section-heading">
+        <h2>Production Management</h2>
+        <p>
           Track and manage your production processes
         </p>
       </div>

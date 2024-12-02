@@ -1,14 +1,14 @@
 'use client'
 import { AuthButton } from "@/components/auth/auth-button";
-// components/Navbar.tsx
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/useUser";
 
 const navigation = [
   { name: "Features", href: "#features" },
@@ -18,12 +18,14 @@ const navigation = [
 ];
 
 export default function Navbar() {
+  const { user } = useUser();
+
   return (
     <nav className="fixed w-full z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="font-bold text-xl">
-            EduManage<span className="text-primary">Pro</span>
+            BizTrack<span className="text-primary">Pro</span>
           </Link>
           
           {/* Desktop Navigation */}
@@ -41,7 +43,15 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-4">
-            <AuthButton />
+              {user && (
+                <Link href="/dashboard">
+                  <Button variant="outline" className="gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              )}
+              <AuthButton />
             </div>
 
             {/* Mobile Menu */}
@@ -63,7 +73,15 @@ export default function Navbar() {
                     </Link>
                   ))}
                   <div className="flex flex-col space-y-4 pt-4 border-t">
-                  <AuthButton />
+                    {user && (
+                      <Link href="/dashboard">
+                        <Button variant="outline" className="w-full gap-2">
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                    )}
+                    <AuthButton />
                   </div>
                 </div>
               </SheetContent>

@@ -28,7 +28,7 @@ const features = [
 
 const FeatureHighlights = () => {
   return (
-    <section className="py-20 bg-gray-800">
+    <section className="py-20 bg-muted">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -36,10 +36,10 @@ const FeatureHighlights = () => {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">
             Feature Highlights
           </h2>
-          <p className="mt-4 text-xl text-gray-300">
+          <p className="mt-4 text-xl text-muted-foreground">
             Discover what makes BizTrack the ultimate business management solution.
           </p>
         </motion.div>
@@ -53,11 +53,11 @@ const FeatureHighlights = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="flex flex-col items-center"
             >
-              <div className="flex items-center justify-center h-16 w-16 rounded-md bg-indigo-500 text-white">
+              <div className="flex items-center justify-center h-16 w-16 rounded-md bg-primary text-primary-foreground">
                 <feature.icon className="h-8 w-8" aria-hidden="true" />
               </div>
-              <h3 className="mt-8 text-lg font-medium text-white text-center">{feature.title}</h3>
-              <p className="mt-2 text-base text-gray-300 text-center">{feature.description}</p>
+              <h3 className="mt-8 text-lg font-medium text-foreground text-center">{feature.title}</h3>
+              <p className="mt-2 text-base text-muted-foreground text-center">{feature.description}</p>
             </motion.div>
           ))}
         </div>
@@ -67,4 +67,3 @@ const FeatureHighlights = () => {
 }
 
 export default FeatureHighlights
-

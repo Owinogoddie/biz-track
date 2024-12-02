@@ -113,9 +113,9 @@ export function StageList({ productionId }: StageListProps) {
     }
   }
   return (
-    <div className="container mx-auto py-6 max-w-7xl">
+    <div className="mx-auto py-6 w-full max-w-7xl">
       <div className="flex justify-between items-center mb-8">
-        <h3 className="text-2xl font-bold">Production Stages</h3>
+        <h3 className="text-xl md:text-2xl font-bold">Production Stages</h3>
         <Button 
           onClick={() => {
             setSelectedStage(null)
@@ -171,7 +171,7 @@ export function StageList({ productionId }: StageListProps) {
                       </div>
                     </div>
 
-                    <div className="flex justify-end space-x-3 pt-4">
+                    <div className="flex justify-end space-x-[5px] pt-4">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -179,7 +179,7 @@ export function StageList({ productionId }: StageListProps) {
                           setShowStageModal(true)
                         }}
                       >
-                        <Pencil className="h-4 w-4 mr-2" /> Edit Stage
+                        <Pencil className="h-4 w-4 mr-[2px]" /> Edit Stage
                       </Button>
                       <Button
                         variant="destructive"
@@ -188,7 +188,7 @@ export function StageList({ productionId }: StageListProps) {
                           setShowDeleteDialog(true)
                         }}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete Stage
+                        <Trash2 className="h-4 w-4 mr-[2px]" /> Delete Stage
                       </Button>
                     </div>
                   </div>

@@ -135,14 +135,14 @@ const Sales = () => {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="h-full md:h-[calc(100vh-4rem)] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-full md:h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex flex-col sm:flex-row items-center gap-4 p-4">
         <div className="w-full sm:flex-1 sm:max-w-md">
           <Input
