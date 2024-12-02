@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
 import { Badge } from '@/components/ui/badge'
+import { formatCurrency } from '@/lib/formatters'
 
 interface LaborListProps {
   stageId: string
@@ -117,7 +118,7 @@ export function LaborList({ stageId, laborEntries, workers, onLaborChange }: Lab
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Rate</p>
-                  <p className="font-medium">${labor.rate.toString()} ({labor.periodType.toLowerCase()})</p>
+                  <p className="font-medium">{formatCurrency(labor.rate)} ({labor.periodType.toLowerCase()})</p>
                 </div>
                 {labor.notes && (
                   <p className="text-sm text-muted-foreground border-t pt-2 break-words">{labor.notes}</p>

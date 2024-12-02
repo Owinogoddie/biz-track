@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Production, Stage } from '@prisma/client'
 import { getProductionWithDetails } from '@/app/actions/production'
 import { ArrowRight, ArrowUp, ArrowDown ,ArrowLeft} from "lucide-react";
+import { LoadingScreen } from '@/components/loading-screen'
 const ProductionDetail = () => {
   const params = useParams()
   const router = useRouter()
@@ -46,7 +47,7 @@ const ProductionDetail = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-lg text-muted-foreground">Loading...</div>
+        <div className="text-lg text-muted-foreground"><LoadingScreen/> </div>
       </div>
     )
   }

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { formatCurrency } from '@/lib/formatters'
 
 interface ResourceListProps {
   stageId: string
@@ -109,7 +110,7 @@ export function ResourceList({ stageId, resources, onResourceChange }: ResourceL
                   {resource.cost && (
                     <div>
                       <p className="text-sm text-muted-foreground">Cost</p>
-                      <p className="font-medium">${resource.cost.toString()}</p>
+                      <p className="font-medium">{formatCurrency(resource.cost)}</p>
                     </div>
                   )}
                 </div>

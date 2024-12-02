@@ -2,6 +2,7 @@ import { ProductWithCategory } from '@/types/product'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { formatCurrency } from '@/lib/formatters'
 
 interface ProductCardProps {
   product: ProductWithCategory
@@ -24,7 +25,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         </p>
       )}
       <div className="flex justify-between items-center">
-        <span className="font-bold">${product.price.toFixed(2)}</span>
+        <span className="font-bold">{formatCurrency(product.price)}</span>
         <Button size="sm">
           <Plus className="h-4 w-4" />
         </Button>

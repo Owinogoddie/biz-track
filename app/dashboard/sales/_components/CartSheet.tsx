@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Loader2, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { formatCurrency } from '@/lib/formatters'
 
 interface CartSheetProps {
   cart: CartItem[]
@@ -39,7 +40,7 @@ export const CartSheet = ({
               <div className="flex-1">
                 <h3 className="font-medium">{item.product.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  ${item.product.price.toFixed(2)} each
+                  {formatCurrency(item.product.price)} each
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -72,7 +73,7 @@ export const CartSheet = ({
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
           <div className="flex justify-between mb-4">
             <span className="font-medium">Total:</span>
-            <span className="font-medium">${getTotal().toFixed(2)}</span>
+            <span className="font-medium">{formatCurrency(getTotal())}</span>
           </div>
           <Button 
             className="w-full" 

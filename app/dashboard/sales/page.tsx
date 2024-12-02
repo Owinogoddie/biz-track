@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { ProductCard } from './_components/ProductCard'
 import { CartSheet } from './_components/CartSheet'
 import { Category, ProductWithCategory } from '@/types/product'
+import { formatCurrency } from '@/lib/formatters'
 
 const ITEMS_PER_PAGE = 12
 
@@ -113,7 +114,7 @@ const Sales = () => {
       
       toast({
         title: 'Sale completed!',
-        description: `Total: $${getTotal().toFixed(2)}`,
+        description: `Total: ${formatCurrency(getTotal())}`,
       })
       clearCart()
     } else {
