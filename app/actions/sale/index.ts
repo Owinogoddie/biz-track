@@ -79,18 +79,13 @@ export async function getSales(businessId: string) {
             product: true
           }
         },
-        seller: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
+        seller: true,
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
-
+console.log(sales)
     return { success: true, sales }
   } catch (error) {
     return { success: false, error: 'Failed to fetch sales' }

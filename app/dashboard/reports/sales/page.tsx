@@ -14,16 +14,22 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from "recharts"
-import { format } from "date-fns"
-import { Loader2, DollarSign, TrendingUp, Users, Package } from "lucide-react"
+import { format, subDays, subMonths, startOfYear, endOfYear } from "date-fns"
+import { Loader2, DollarSign, TrendingUp, Users, Package, Award, TrendingDown } from "lucide-react"
 import { DataTable } from "./_components/SalesTable"
 import { columns } from "./_components/columns"
 import { Sale, SellerStats, DateRangeType } from "@/types/sale"
+import { BestSellersTab } from "./_components/BestSellersTab"
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const SalesDashboard = () => {
   const [sales, setSales] = useState<Sale[]>([])
+  const [bestSellers, setBestSellers] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { currentBusiness } = useBusinessStore()
   const { toast } = useToast()
@@ -62,27 +68,74 @@ const SalesDashboard = () => {
   const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0)
   const averageTicket = totalSales / (filteredSales.length || 1)
 
-  // Calculate top sellers with proper typing
-  const sellerStats = filteredSales.reduce<Record<string, SellerStats>>((acc, sale) => {
-    const sellerId = sale.sellerId
-    if (!acc[sellerId]) {
-      acc[sellerId] = {
-        name: sale.seller.name,
-        total: 0,
-        count: 0,
+  // Calculate seller statistics for different time periods
+  const calculateSellerStats = (salesData: Sale[]) => {
+    return salesData.reduce<Record<string, SellerStats>>((acc, sale) => {
+      const sellerId = sale.sellerId
+      if (!acc[sellerId]) {
+        acc[sellerId] = {
+          name: sale.seller.name,
+          total: 0,
+          count: 0,
+        }
       }
-    }
-    acc[sellerId].total += sale.total
-    acc[sellerId].count += 1
-    return acc
-  }, {})
+      acc[sellerId].total += sale.total
+      acc[sellerId].count += 1
+      return acc
+    }, {})
+  }
 
-  const topSellers = Object.values(sellerStats)
+  // Get top sellers for different time periods
+  const now = new Date()
+  const dailySales = sales.filter(sale => 
+    new Date(sale.createdAt) >= subDays(now, 1)
+  )
+  const weeklySales = sales.filter(sale => 
+    new Date(sale.createdAt) >= subDays(now, 7)
+  )
+  const monthlySales = sales.filter(sale => 
+    new Date(sale.createdAt) >= subDays(now, 30)
+  )
+  const yearlySales = sales.filter(sale => 
+    new Date(sale.createdAt) >= subMonths(now, 12)
+  )
+
+  const dailyTopSeller = Object.values(calculateSellerStats(dailySales))
+    .sort((a, b) => b.total - a.total)[0]
+  const weeklyTopSeller = Object.values(calculateSellerStats(weeklySales))
+    .sort((a, b) => b.total - a.total)[0]
+  const monthlyTopSeller = Object.values(calculateSellerStats(monthlySales))
+    .sort((a, b) => b.total - a.total)[0]
+  const yearlyTopSeller = Object.values(calculateSellerStats(yearlySales))
+    .sort((a, b) => b.total - a.total)[0]
+    const topSellers = Object.values(calculateSellerStats(filteredSales))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5)
 
+  // Calculate product performance
+  const productStats = filteredSales.reduce((acc: any, sale) => {
+    sale.items.forEach((item: any) => {
+      if (!acc[item.product.id]) {
+        acc[item.product.id] = {
+          name: item.product.name,
+          quantity: 0,
+          revenue: 0
+        }
+      }
+      acc[item.product.id].quantity += item.quantity
+      acc[item.product.id].revenue += item.price * item.quantity
+    })
+    return acc
+  }, {})
+
+  const productPerformance = Object.values(productStats)
+    .sort((a: any, b: any) => b.revenue - a.revenue)
+
+  const topProducts = productPerformance.slice(0, 5)
+  const bottomProducts = [...productPerformance].sort((a: any, b: any) => a.revenue - b.revenue).slice(0, 5)
+
   // Calculate daily sales for chart
-  const dailySales = filteredSales.reduce<Record<string, number>>((acc, sale) => {
+  const dailySalesData = filteredSales.reduce<Record<string, number>>((acc, sale) => {
     const date = format(new Date(sale.createdAt), "MMM dd")
     if (!acc[date]) {
       acc[date] = 0
@@ -91,10 +144,16 @@ const SalesDashboard = () => {
     return acc
   }, {})
 
-  const chartData = Object.entries(dailySales).map(([date, total]) => ({
+  const chartData = Object.entries(dailySalesData).map(([date, total]) => ({
     date,
     total,
   }))
+
+  const productChartData = topProducts.map((product: any) => ({
+    name: product.name,
+    value: product.revenue
+  }))
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
@@ -127,7 +186,7 @@ const SalesDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+            <div className="text-2xl font-bold">KSH {totalSales.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -136,7 +195,7 @@ const SalesDashboard = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${averageTicket.toFixed(2)}</div>
+            <div className="text-2xl font-bold">KSH {averageTicket.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -154,7 +213,66 @@ const SalesDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(sellerStats).length}</div>
+            <div className="text-2xl font-bold">{Object.keys(calculateSellerStats(filteredSales)).length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Top Seller</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{dailyTopSeller?.name || "No sales"}</div>
+            {dailyTopSeller && (
+              <p className="text-sm text-muted-foreground">
+                KSH {dailyTopSeller.total.toLocaleString()} ({dailyTopSeller.count} sales)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Weekly Top Seller</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{weeklyTopSeller?.name || "No sales"}</div>
+            {weeklyTopSeller && (
+              <p className="text-sm text-muted-foreground">
+                KSH {weeklyTopSeller.total.toLocaleString()} ({weeklyTopSeller.count} sales)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Monthly Top Seller</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{monthlyTopSeller?.name || "No sales"}</div>
+            {monthlyTopSeller && (
+              <p className="text-sm text-muted-foreground">
+                KSH {monthlyTopSeller.total.toLocaleString()} ({monthlyTopSeller.count} sales)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Yearly Top Seller</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{yearlyTopSeller?.name || "No sales"}</div>
+            {yearlyTopSeller && (
+              <p className="text-sm text-muted-foreground">
+                KSH {yearlyTopSeller.total.toLocaleString()} ({yearlyTopSeller.count} sales)
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -162,6 +280,8 @@ const SalesDashboard = () => {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="sellers">Best Sellers</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
@@ -176,7 +296,7 @@ const SalesDashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => `KSH ${Number(value).toLocaleString()}`} />
                     <Bar dataKey="total" fill="#2563eb" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -184,20 +304,72 @@ const SalesDashboard = () => {
             </Card>
             <Card className="col-span-3">
               <CardHeader>
-                <CardTitle>Top Sellers</CardTitle>
+                <CardTitle>Top Products Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <PieChart>
+                    <Pie
+                      data={productChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {productChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `KSH ${Number(value).toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="products">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Performing Products</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-8">
-                  {topSellers.map((seller) => (
-                    <div className="flex items-center" key={seller.name}>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">{seller.name}</p>
+                  {topProducts.map((product: any) => (
+                    <div className="flex items-center" key={product.name}>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{product.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          ${seller.total.toFixed(2)} ({seller.count} sales)
+                          KSH {product.revenue.toLocaleString()} ({product.quantity} units)
                         </p>
                       </div>
                       <div className="ml-auto font-medium">
-                        {((seller.total / totalSales) * 100).toFixed(1)}%
+                        {((product.revenue / totalSales) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Lowest Performing Products</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {bottomProducts.map((product: any) => (
+                    <div className="flex items-center" key={product.name}>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{product.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          KSH {product.revenue.toLocaleString()} ({product.quantity} units)
+                        </p>
+                      </div>
+                      <div className="ml-auto font-medium">
+                        {((product.revenue / totalSales) * 100).toFixed(1)}%
                       </div>
                     </div>
                   ))}
@@ -205,6 +377,16 @@ const SalesDashboard = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        <TabsContent value="sellers">
+          <BestSellersTab
+            dailyTopSeller={dailyTopSeller}
+            weeklyTopSeller={weeklyTopSeller}
+            monthlyTopSeller={monthlyTopSeller}
+            yearlyTopSeller={yearlyTopSeller}
+            topSellers={topSellers}
+            totalSales={totalSales}
+          />
         </TabsContent>
         <TabsContent value="sales">
           <Card>
