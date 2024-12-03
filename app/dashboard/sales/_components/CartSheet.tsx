@@ -22,6 +22,10 @@ export const CartSheet = ({
   onCompleteSale,
   getTotal
 }: CartSheetProps) => {
+  const handleCompleteSale = async () => {
+    await onCompleteSale()
+  }
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -77,7 +81,7 @@ export const CartSheet = ({
           </div>
           <Button 
             className="w-full" 
-            onClick={onCompleteSale}
+            onClick={handleCompleteSale}
             disabled={cart.length === 0 || isProcessing}
           >
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

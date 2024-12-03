@@ -23,6 +23,7 @@ import {
   IconUsersPlus,
   IconUserSearch,
   IconUserPlus,
+  IconCreditCard,
 } from '@tabler/icons-react';
 import { DollarSign, Receipt, ChartBar } from "lucide-react";
 export interface NavLink {
@@ -176,6 +177,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/dashboard/sales',
         icon: <IconShoppingCart size={18} />,
+      },
+      {
+        title: 'Lipa Mdogo Mdogo',
+        label: '',
+        href: '/dashboard/installments',
+        icon: <IconCreditCard size={18} />,
       },
     ]
   },

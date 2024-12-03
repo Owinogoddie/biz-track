@@ -89,6 +89,7 @@ model Business {
   sales         Sale[]
   debts Debt[]
 
+  installmentPlans InstallmentPlan[] 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -132,6 +133,7 @@ model Product {
   // Production relations
   productions Production[] 
   
+  installmentPlans InstallmentPlan[] 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -188,6 +190,46 @@ enum SaleStatus {
   COMPLETED
   CANCELLED
 }
+model InstallmentPlan {
+  id            String    @id @default(cuid())
+  totalAmount   Float
+  paidAmount    Float     @default(0)
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  status        String    @default("ACTIVE") // ACTIVE, COMPLETED, DEFAULTED
+  notes         String?
+  
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  businessId    String
+  business      Business    @relation(fields: [businessId], references: [id])
+  
+  payments      InstallmentPayment[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([productId])
+}
+
+model InstallmentPayment {
+  id                String          @id @default(cuid())
+  amount           Float
+  paymentDate      DateTime        @default(now())
+  notes            String?
+  
+  installmentPlanId String
+  installmentPlan   InstallmentPlan @relation(fields: [installmentPlanId], references: [id])
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([installmentPlanId])
+}
 model Supplier {
   id          String        @id @default(cuid())
   name        String
@@ -215,6 +257,7 @@ model Customer {
   business    Business      @relation(fields: [businessId], references: [id])
   transactions Transaction[]
   debts       Debt[]
+  installmentPlans InstallmentPlan[] 
   
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

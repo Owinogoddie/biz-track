@@ -42,3 +42,4 @@ interface Product {
     from: Date
     to: Date | undefined
   }
+export type { CartItem } from './product'

@@ -104,7 +104,7 @@ const SalesDashboard = () => {
   }
 
   return (
-    <div className="h-full md:h-[calc(100vh-4rem)] p-8 space-y-8 overflow-y-auto">
+    <div className="h-full md:h-[calc(100vh-4rem)] md:p-8 space-y-8 overflow-y-auto">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">Sales Dashboard</h2>
         <DatePickerWithRange 

@@ -1,21 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useBusinessStore } from '@/store/useBusinessStore'
 import { useSaleStore } from '@/store/useSaleStore'
 import { createSale } from '@/app/actions/sale'
 import { getProducts } from '@/app/actions/product'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Loader2 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination"
-import { Button } from '@/components/ui/button'
-import { ProductCard } from './_components/ProductCard'
-import { CartSheet } from './_components/CartSheet'
-import { Category, ProductWithCategory } from '@/types/product'
+import { ProductWithCategory, Category } from '@/types/product'
 import { formatCurrency } from '@/lib/formatters'
+import { SearchBar } from './_components/SearchBar'
+import { ProductGrid } from './_components/ProductGrid'
+import { PaginationControls } from './_components/PaginationControls'
 
 const ITEMS_PER_PAGE = 12
 
@@ -32,7 +28,6 @@ const Sales = () => {
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Fetch products and categories from server
   useEffect(() => {
     const fetchData = async () => {
       if (currentBusiness) {
@@ -41,12 +36,11 @@ const Sales = () => {
           setProducts(result.products)
           setFilteredProducts(result.products)
           
-          // Fix duplicate categories by using category ID as the unique identifier
           const uniqueCategories = Array.from(
             new Map(
               result.products
-                .filter(product => product.category) // Filter out products without categories
-                .map(product => [product.category?.id, product.category]) // Use category ID as key
+                .filter(product => product.category)
+                .map(product => [product.category?.id, product.category])
             ).values()
           ) as Category[]
           
@@ -65,7 +59,6 @@ const Sales = () => {
     fetchData()
   }, [currentBusiness, toast])
 
-  // Filter products based on search term and category
   useEffect(() => {
     let filtered = products
     
@@ -81,7 +74,7 @@ const Sales = () => {
     }
     
     setFilteredProducts(filtered)
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1)
   }, [searchTerm, selectedCategory, products])
 
   const handleAddToCart = (product: ProductWithCategory) => {
@@ -144,93 +137,30 @@ const Sales = () => {
 
   return (
     <div className="h-full md:h-[calc(100vh-4rem)] flex flex-col">
-      <div className="flex flex-col sm:flex-row items-center gap-4 p-4">
-        <div className="w-full sm:flex-1 sm:max-w-md">
-          <Input
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="w-full sm:w-[200px]">
-          <Select 
-            value={selectedCategory || undefined} 
-            onValueChange={(value) => setSelectedCategory(value || null)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <CartSheet
-          cart={cart}
-          isProcessing={isProcessing}
-          onUpdateQuantity={updateQuantity}
-          onRemoveFromCart={removeFromCart}
-          onCompleteSale={handleCompleteSale}
-          getTotal={getTotal}
-        />
-      </div>
-
-      <ScrollArea className="flex-1 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {paginatedProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={handleAddToCart}
-            />
-          ))}
-        </div>
-
-        {totalPages > 1 && (
-          <div className="mt-8 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                </PaginationItem>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <Button
-                      variant={currentPage === page ? "default" : "outline"}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      {page}
-                    </Button>
-                  </PaginationItem>
-                ))}
-                
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
-      </ScrollArea>
+      <SearchBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        categories={categories}
+        cart={cart}
+        isProcessing={isProcessing}
+        onUpdateQuantity={updateQuantity}
+        onRemoveFromCart={removeFromCart}
+        onCompleteSale={handleCompleteSale}
+        getTotal={getTotal}
+      />
+      
+      <ProductGrid
+        products={paginatedProducts}
+        onAddToCart={handleAddToCart}
+      />
+      
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   )
 }

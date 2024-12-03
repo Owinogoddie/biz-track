@@ -11,17 +11,19 @@ interface DataTableToolbarProps<TData> {
   table: Table<TData>
   searchKey?: string
   children?: React.ReactNode
+  className?: string
 }
 
 export function DataTableToolbar<TData>({
   table,
   searchKey = "name",
-  children
+  children,
+  className
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
   return (
-    <div className="flex items-center justify-between">
+    <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${className}`}>
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder={`Search ${searchKey}...`}
@@ -29,7 +31,7 @@ export function DataTableToolbar<TData>({
           onChange={(event) =>
             table.getColumn(searchKey)?.setFilterValue(event.target.value)
           }
-          className="h-8 w-[150px] lg:w-[250px]"
+          className="h-8 w-full sm:w-[250px]"
         />
         {isFiltered && (
           <Button
