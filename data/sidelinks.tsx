@@ -49,7 +49,7 @@ export const sidelinks: SideLink[] = [
     icon: <IconBox size={18} />,
     sub: [
       {
-        title: 'Product List',
+        title: 'Products',
         label: '',
         href: '/dashboard/products',
         icon: <IconPackage size={18} />,
@@ -193,15 +193,15 @@ export const sidelinks: SideLink[] = [
     icon: <IconUsers size={18} />,
     sub: [
       {
-        title: 'Customer List',
+        title: 'Customer',
         label: '',
-        href: '/dashboard/customers/list',
+        href: '/dashboard/customers',
         icon: <IconUsers size={18} />,
       },
       {
         title: 'Customer Debts',
         label: '',
-        href: '/dashboard/customers/debts',
+        href: '/dashboard/debts',
         icon: <IconMoneybag size={18} />,
       },
     ]
