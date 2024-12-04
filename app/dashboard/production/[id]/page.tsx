@@ -1,55 +1,107 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useParams } from 'next/navigation'
 import { StageList } from './_components/stage-list'
+import { OutputList } from './_components/output-list'
 import { useToast } from '@/hooks/use-toast'
-import { Production, Stage } from '@prisma/client'
 import { getProductionWithDetails } from '@/app/actions/production'
-import { ArrowRight, ArrowUp, ArrowDown ,ArrowLeft} from "lucide-react";
+import { getProductionOutputs } from '@/app/actions/production-output'
 import { LoadingScreen } from '@/components/loading-screen'
+import { Separator } from '@/components/ui/separator'
+import { ProductionHeader } from './_components/production-header'
+import { StatusCards } from './_components/status-cards'
+
+interface StageWithDetails {
+  id: string
+  name: string
+  description?: string
+  startDate?: Date
+  endDate?: Date
+  status: string
+  order: number
+  productionId: string
+  notes?: string
+  createdAt: Date
+  updatedAt: Date
+  resources: Array<{
+    cost: number | null
+    quantity: number
+  }>
+  labor: Array<{
+    rate: number | null
+    hours: number | null
+    days: number | null
+    periodType: 'HOURLY' | 'DAILY' | 'MONTHLY'
+  }>
+}
+
+interface ProductionWithDetails {
+  id: string
+  batchNumber: string
+  productName: string
+  startDate: Date
+  endDate: Date | null
+  status: string
+  businessId: string
+  productId: string | null
+  stages: StageWithDetails[]
+  createdAt: Date
+  updatedAt: Date
+}
+
 const ProductionDetail = () => {
   const params = useParams()
-  const router = useRouter()
   const { toast } = useToast()
-  const [production, setProduction] = useState<Production & { stages: Stage[] } | null>(null)
+  const [production, setProduction] = useState<ProductionWithDetails | null>(null)
+  const [outputs, setOutputs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchProduction = async () => {
-      try {
-        const result = await getProductionWithDetails(params.id as string)
-        if (result.success) {
-          setProduction(result.production)
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: result.error
-          })
-        }
-      } catch (error) {
+  const fetchProduction = async () => {
+    try {
+      const result = await getProductionWithDetails(params.id as string)
+      if (result.success) {
+        setProduction(result.production)
+      } else {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load production details'
+          description: result.error
         })
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load production details'
+      })
     }
+  }
 
+  const fetchOutputs = async () => {
+    try {
+      const result = await getProductionOutputs(params.id as string)
+      if (result.success) {
+        setOutputs(result.outputs)
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load production outputs'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchProduction()
-  }, [params.id, toast])
+    fetchOutputs()
+  }, [params.id])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-lg text-muted-foreground"><LoadingScreen/> </div>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!production) {
@@ -60,72 +112,58 @@ const ProductionDetail = () => {
     )
   }
 
+  // Calculate total costs (resources + labor)
+  const resourceCosts = production.stages.reduce((total, stage) => {
+    return total + stage.resources.reduce((stageTotal, resource) => {
+      return stageTotal + (resource.cost || 0) * resource.quantity
+    }, 0)
+  }, 0)
+
+  const laborCosts = production.stages.reduce((total, stage) => {
+    return total + stage.labor.reduce((stageTotal, labor) => {
+      const rate = labor.rate || 0
+      if (labor.periodType === 'HOURLY') {
+        return stageTotal + rate * (labor.hours || 0)
+      } else if (labor.periodType === 'DAILY') {
+        return stageTotal + rate * (labor.days || 0)
+      } else if (labor.periodType === 'MONTHLY') {
+        return stageTotal + (rate || 0)
+      }
+      return stageTotal
+    }, 0)
+  }, 0)
+
+  const totalCosts = resourceCosts + laborCosts
+
   return (
     <div className="mx-auto px-0 md:px-4 py-6 space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="space-y-1">
-          <h2 className="text xl md:text-2xl font-bold tracking-tight">{production.productName || 'Unnamed Production'}</h2>
-          <p className="text-muted-foreground">
-            Batch Number: {production.batchNumber}
-          </p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={() => router.push('/dashboard/productions')}
-          className="w-full sm:w-auto"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Productions
-        </Button>
-      </div>
+      <ProductionHeader 
+        productName={production.productName}
+        batchNumber={production.batchNumber}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-        <CardHeader className="space-y-1 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
-            Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg font-semibold tracking-tight">
-            {production.status}
-          </div>
-        </CardContent>
-      </Card>
+      <StatusCards 
+        status={production.status}
+        startDate={production.startDate}
+        endDate={production.endDate}
+      />
 
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-        <CardHeader className="space-y-1 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <ArrowUp className="w-5 h-5 md:w-6 md:h-6" />
-            Start Date
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg font-semibold tracking-tight">
-            {new Date(production.startDate).toLocaleDateString()}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="sm:col-span-2 lg:col-span-1 group hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-        <CardHeader className="space-y-1 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <ArrowDown className="w-5 h-5 md:w-6 md:h-6" />
-            End Date
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-lg font-semibold tracking-tight">
-            {production.endDate 
-              ? new Date(production.endDate).toLocaleDateString()
-              : 'Not completed'}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-
-      <StageList productionId={production.id} />
+      <StageList 
+        productionId={production.id} 
+        onStageChange={fetchProduction}
+      />
+      
+      <Separator className="my-8" />
+      
+      <OutputList 
+        productionId={production.id}
+        outputs={outputs}
+        onOutputChange={fetchOutputs}
+        totalCosts={totalCosts}
+        resourceCosts={resourceCosts}
+        laborCosts={laborCosts}
+        stages={production.stages}
+      />
     </div>
   )
 }

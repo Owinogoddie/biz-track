@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator'
 
 interface StageListProps {
   productionId: string
+  onStageChange: () => void
 }
 
 type StageWithDetails = Stage & {
@@ -34,7 +35,7 @@ type StageWithDetails = Stage & {
   labor: (Labor & { worker: Worker })[]
 }
 
-export function StageList({ productionId }: StageListProps) {
+export function StageList({ productionId, onStageChange }: StageListProps) {
   const [stages, setStages] = useState<StageWithDetails[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
@@ -47,6 +48,7 @@ export function StageList({ productionId }: StageListProps) {
     const result = await getStages(productionId)
     if (result.success) {
       setStages(result.stages)
+      onStageChange()
     } else {
       toast({
         variant: 'destructive',
@@ -112,6 +114,7 @@ export function StageList({ productionId }: StageListProps) {
         return 'text-gray-600'
     }
   }
+
   return (
     <div className="mx-auto py-6 w-full max-w-7xl">
       <div className="flex justify-between items-center mb-8">

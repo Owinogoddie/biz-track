@@ -275,6 +275,7 @@ model Production {
   productId   String?   
   stages      Stage[]
   waste       Waste[]
+  outputs     ProductionOutput[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -351,6 +352,19 @@ model Labor {
   updatedAt   DateTime      @updatedAt 
   
   @@index([date])       
+}
+model ProductionOutput {
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  quantity      Float
+  unit          String
+  pricePerUnit  Float
+  totalValue    Float
+  production    Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  productionId  String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 
