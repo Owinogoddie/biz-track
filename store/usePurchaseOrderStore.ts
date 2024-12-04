@@ -1,11 +1,25 @@
 import { create } from 'zustand'
 import { PurchaseOrder } from '@prisma/client'
 
+interface PurchaseOrderWithRelations extends PurchaseOrder {
+  items: {
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+  }[]
+  supplier: {
+    id: string
+    name: string
+  }
+}
+
 interface PurchaseOrderStore {
-  purchaseOrders: PurchaseOrder[]
-  setPurchaseOrders: (purchaseOrders: PurchaseOrder[]) => void
-  addPurchaseOrder: (purchaseOrder: PurchaseOrder) => void
-  updatePurchaseOrder: (purchaseOrder: PurchaseOrder) => void
+  purchaseOrders: PurchaseOrderWithRelations[]
+  setPurchaseOrders: (purchaseOrders: PurchaseOrderWithRelations[]) => void
+  addPurchaseOrder: (purchaseOrder: PurchaseOrderWithRelations) => void
+  updatePurchaseOrder: (purchaseOrder: PurchaseOrderWithRelations) => void
   removePurchaseOrder: (id: string) => void
 }
 

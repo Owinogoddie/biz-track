@@ -10,7 +10,7 @@ import { EditInstallmentModal } from './edit-installment-modal'
 import { AddPaymentModal } from './add-payment-modal'
 import { useToast } from '@/hooks/use-toast'
 import { useInstallmentStore } from '@/store/useInstallmentStore'
-import { deleteInstallmentPlan } from '@/app/actions/installment'
+import { deleteInstallmentPlan, getInstallmentPlan } from '@/app/actions/installment'
 import { Loader2 } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import {
@@ -105,7 +105,14 @@ export const columns: ColumnDef<InstallmentPlan>[] = [
       const [showDeleteDialog, setShowDeleteDialog] = useState(false)
       const [isDeleting, setIsDeleting] = useState(false)
       const { toast } = useToast()
-      const { removeInstallmentPlan } = useInstallmentStore()
+      const { removeInstallmentPlan, updateInstallmentPlan } = useInstallmentStore()
+
+      const refreshPlanData = async () => {
+        const result = await getInstallmentPlan(row.original.id)
+        if (result.success) {
+          updateInstallmentPlan(result.plan)
+        }
+      }
 
       const handleDelete = async () => {
         setIsDeleting(true)
@@ -156,7 +163,10 @@ export const columns: ColumnDef<InstallmentPlan>[] = [
             <EditInstallmentModal
               installmentPlan={row.original}
               onClose={() => setShowEditModal(false)}
-              onSuccess={() => setShowEditModal(false)}
+              onSuccess={() => {
+                refreshPlanData()
+                setShowEditModal(false)
+              }}
             />
           )}
           
@@ -164,7 +174,10 @@ export const columns: ColumnDef<InstallmentPlan>[] = [
             <AddPaymentModal
               installmentPlanId={row.original.id}
               onClose={() => setShowPaymentModal(false)}
-              onSuccess={() => setShowPaymentModal(false)}
+              onSuccess={() => {
+                refreshPlanData()
+                setShowPaymentModal(false)
+              }}
             />
           )}
 

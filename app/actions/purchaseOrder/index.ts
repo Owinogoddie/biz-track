@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { getUserAction } from '../auth'
+import { PurchaseOrder, POStatus } from '@/types/purchase-order'
 
 export interface CreatePurchaseOrderInput {
   poNumber: string
@@ -48,7 +49,8 @@ export async function createPurchaseOrder(data: CreatePurchaseOrderInput) {
         }
       },
       include: {
-        items: true
+        items: true,
+        supplier: true
       }
     })
 
@@ -85,7 +87,10 @@ export async function getPurchaseOrders(businessId: string) {
   }
 }
 
-export async function updatePurchaseOrderStatus(id: string, status: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED') {
+export async function updatePurchaseOrderStatus(
+  id: string, 
+  status: POStatus
+) {
   try {
     const userResult = await getUserAction()
     
@@ -95,7 +100,11 @@ export async function updatePurchaseOrderStatus(id: string, status: 'DRAFT' | 'S
 
     const purchaseOrder = await prisma.purchaseOrder.update({
       where: { id },
-      data: { status }
+      data: { status },
+      include: {
+        items: true,
+        supplier: true
+      }
     })
 
     return { success: true, purchaseOrder }
@@ -104,8 +113,7 @@ export async function updatePurchaseOrderStatus(id: string, status: 'DRAFT' | 'S
   }
 }
 
-
-export async function updatePurchaseOrder(id: string, data: any) {
+export async function updatePurchaseOrder(id: string, data: Partial<CreatePurchaseOrderInput>) {
   try {
     const userResult = await getUserAction()
     

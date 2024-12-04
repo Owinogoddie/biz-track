@@ -12,6 +12,8 @@ import { columns } from './_components/purchase-order-columns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { ColumnDef } from '@tanstack/react-table'
+import { PurchaseOrder } from '@/types/purchase-order'
 
 const PurchaseOrders = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -76,9 +78,9 @@ const PurchaseOrders = () => {
         
         {['all', 'draft', 'sent', 'approved', 'completed'].map((status) => (
           <TabsContent key={status} value={status} className="space-y-4">
-            <DataTable 
-              columns={columns} 
-              data={getFilteredPOs(status)} 
+           <DataTable<PurchaseOrder, unknown>
+              columns={columns as ColumnDef<PurchaseOrder, unknown>[]}
+              data={getFilteredPOs(status)}
               searchKey="poNumber"
             />
           </TabsContent>

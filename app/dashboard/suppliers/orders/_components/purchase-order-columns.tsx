@@ -1,5 +1,4 @@
 "use client"
-"use client"
 
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
@@ -30,45 +29,48 @@ import {
 } from "@/components/ui/alert-dialog"
 
 type POStatus = "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "COMPLETED" | "CANCELLED"
-export type PurchaseOrder = {
-    id: string
-    poNumber: string
-    status: POStatus
-    issueDate: Date
-    deliveryDate: Date | null
-    totalAmount: number
-    notes: string | null
-    supplierId: string
-    supplier: {
-      name: string
-    }
-    businessId: string
-    createdAt: Date
-    updatedAt: Date
-    items: {
-      id: string
-      description: string
-      quantity: number
-      unitPrice: number
-      totalPrice: number
-    }[]
+
+export interface PurchaseOrder {
+  id: string
+  poNumber: string
+  status: POStatus
+  issueDate: Date
+  deliveryDate: Date | null
+  totalAmount: number
+  notes: string | null
+  supplierId: string
+  supplier: {
+    name: string
   }
-  
+  businessId: string
+  createdAt: Date
+  updatedAt: Date
+  items: {
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+  }[]
+}
 
 export const columns: ColumnDef<PurchaseOrder>[] = [
   {
+    id: "poNumber",
     accessorKey: "poNumber",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="PO Number" />
     ),
   },
   {
-    accessorKey: "supplier.name",
+    id: "supplierName",
+    accessorFn: (row) => row.supplier.name,
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Supplier" />
     ),
   },
   {
+    id: "status",
     accessorKey: "status",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
@@ -85,6 +87,7 @@ export const columns: ColumnDef<PurchaseOrder>[] = [
     },
   },
   {
+    id: "issueDate",
     accessorKey: "issueDate",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Issue Date" />
@@ -96,6 +99,7 @@ export const columns: ColumnDef<PurchaseOrder>[] = [
     },
   },
   {
+    id: "deliveryDate",
     accessorKey: "deliveryDate",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Delivery Date" />
@@ -108,6 +112,7 @@ export const columns: ColumnDef<PurchaseOrder>[] = [
     },
   },
   {
+    id: "totalAmount",
     accessorKey: "totalAmount",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Total Amount" />
