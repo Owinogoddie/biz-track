@@ -25,7 +25,7 @@ import {
   IconUserPlus,
   IconCreditCard,
 } from '@tabler/icons-react';
-import { DollarSign, Receipt, ChartBar } from "lucide-react";
+import { DollarSign, Receipt, ChartBar, CreditCard } from "lucide-react";
 export interface NavLink {
   title: string;
   label?: string;
@@ -296,6 +296,32 @@ export const sidelinks: SideLink[] = [
         href: '/dashboard/reports/inventory',
         icon: <IconBox size={18} />,
       },
+    ]
+  },
+  {
+    title: 'Expenditure',
+    label: '',
+    href: '/dashboard/expenditure',
+    icon: <DollarSign size={18} />,
+    sub: [
+      {
+        title: 'Overview',
+        label: '',
+        href: '/dashboard/expenditures',
+        icon: <ChartBar size={18} />,
+      },
+      {
+        title: 'Expenses',
+        label: '',
+        href: '/dashboard/expenditures',
+        icon:<Receipt size={18}/>
+      },
+      // {
+      //   title: 'Payments',
+      //   label: '',
+      //   href: '/dashboard/expenditure/payments',
+      //   icon: <CreditCard size={18} />,
+      // }
     ]
   },
   {

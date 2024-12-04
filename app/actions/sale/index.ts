@@ -85,7 +85,7 @@ export async function getSales(businessId: string) {
         createdAt: 'desc'
       }
     })
-console.log(sales)
+// console.log(sales)
     return { success: true, sales }
   } catch (error) {
     return { success: false, error: 'Failed to fetch sales' }

@@ -1,3 +1,4 @@
+import { verifyEmailAction } from '@/app/actions/auth';
 interface Product {
     id: string
     name: string
@@ -36,6 +37,7 @@ interface Product {
     name: string
     total: number
     count: number
+    email?:string
   }
   
   export interface DateRangeType {

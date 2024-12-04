@@ -88,8 +88,10 @@ model Business {
   subscription  Subscription?
   sales         Sale[]
   debts Debt[]
-
+expenditures Expenditure[]
   installmentPlans InstallmentPlan[] 
+ purchaseOrders PurchaseOrder[]
+supplierContracts SupplierContract[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -190,6 +192,19 @@ enum SaleStatus {
   COMPLETED
   CANCELLED
 }
+model Expenditure {
+  id          String      @id @default(cuid())
+  businessId  String
+  amount      Float
+  category    String
+  description String
+  date        DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  business    Business    @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
 model InstallmentPlan {
   id            String    @id @default(cuid())
   totalAmount   Float
@@ -236,15 +251,133 @@ model Supplier {
   email       String?
   phone       String?
   address     String?
+  status      SupplierStatus @default(ACTIVE)
+  transactions Transaction[]
+  rating      Int?         // 1-5 rating
+  taxId       String?
+  website     String?
+  notes       String?
   
   businessId  String
-  business    Business      @relation(fields: [businessId], references: [id])
-  transactions Transaction[]
+  business    Business     @relation(fields: [businessId], references: [id])
   
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  contacts    SupplierContact[]
+  purchaseOrders PurchaseOrder[]
+  contracts   SupplierContract[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([businessId, name])
 }
 
+model SupplierContact {
+  id          String    @id @default(cuid())
+  name        String
+  title       String?
+  email       String
+  phone       String?
+  isPrimary   Boolean   @default(false)
+  
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PurchaseOrder {
+  id          String    @id @default(cuid())
+  poNumber    String    // PO-2024-001
+  status      POStatus  @default(DRAFT)
+  issueDate   DateTime
+  deliveryDate DateTime?
+  totalAmount Decimal   @default(0)
+  notes       String?
+  
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  
+  items       POItem[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([businessId, poNumber])
+}
+
+model POItem {
+  id          String    @id @default(cuid())
+  description String
+  quantity    Int
+  unitPrice   Decimal
+  totalPrice  Decimal
+  
+  poId        String
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SupplierContract {
+  id          String    @id @default(cuid())
+  title       String
+  startDate   DateTime
+  endDate     DateTime?
+  status      ContractStatus @default(DRAFT)
+  terms       String?   // Contract terms
+  value       Decimal?  // Contract value if applicable
+  
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  
+  documents   ContractDocument[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ContractDocument {
+  id          String    @id @default(cuid())
+  name        String
+  fileUrl     String
+  fileType    String
+  
+  contractId  String
+  contract    SupplierContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum POStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
 model Customer {
   id          String        @id @default(cuid())
   name        String

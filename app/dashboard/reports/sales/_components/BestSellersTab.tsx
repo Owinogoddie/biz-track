@@ -19,10 +19,18 @@ export function BestSellersTab({
   topSellers,
   totalSales
 }: BestSellersTabProps) {
+  const formatSellerName = (seller?: SellerStats) => {
+    if (!seller) return "No sales";
+    if (seller.name) return seller.name;
+    // Extract username from email if name is null
+    const emailMatch = seller.email?.match(/^([^@]*)@/);
+    return emailMatch ? emailMatch[1] : "Unknown Seller";
+  };
+
   const formatSellerInfo = (seller?: SellerStats) => {
     if (!seller) return { name: "No sales", stats: null };
     return {
-      name: seller.name || "Unknown Seller",
+      name: formatSellerName(seller),
       stats: `KSH ${seller.total.toLocaleString()} (${seller.count} sales)`
     };
   };
@@ -90,12 +98,15 @@ export function BestSellersTab({
           <CardTitle>All Time Best Sellers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-8">
-            {topSellers.map((seller) => (
-              <div className="flex items-center" key={seller.name || 'unknown'}>
+        <div className="space-y-8">
+            {topSellers.map((seller, index) => (
+              <div 
+                className="flex items-center" 
+                key={`${seller.email || 'unknown'}-${seller.total}-${index}`}
+              >
                 <div className="space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {seller.name || "Unknown Seller"}
+                    {formatSellerName(seller)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     KSH {seller.total.toLocaleString()} ({seller.count} sales)
