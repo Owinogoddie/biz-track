@@ -141,9 +141,9 @@ export const sidelinks: SideLink[] = [
     icon: <IconTruck size={18} />,
     sub: [
       {
-        title: 'Supplier List',
+        title: 'Suppliers',
         label: '',
-        href: '/dashboard/suppliers/list',
+        href: '/dashboard/suppliers',
         icon: <IconUsers size={18} />,
       },
       {
@@ -153,11 +153,18 @@ export const sidelinks: SideLink[] = [
         icon: <IconReceipt size={18} />,
       },
       {
+        title: 'Purchase Orders',
+        label: '',
+        href: '/dashboard/suppliers/orders',
+        icon: <IconReceipt size={18} />,
+      },
+      {
         title: 'Partner Management',
         label: '',
         href: '/dashboard/suppliers/partners',
         icon: <IconUsersPlus size={18} />,
       },
+
     ]
   },
   {
@@ -258,26 +265,7 @@ export const sidelinks: SideLink[] = [
       // }
     ]
   },
-  {
-    title: 'Suppliers',
-    label: '',
-    href: '/dashboard/suppliers',
-    icon: <IconTruck size={18} />,
-    sub: [
-      {
-        title: 'Supplier List',
-        label: '',
-        href: '/dashboard/suppliers/list',
-        icon: <IconUserCircle size={18} />,
-      },
-      {
-        title: 'Purchase Orders',
-        label: '',
-        href: '/dashboard/suppliers/orders',
-        icon: <IconReceipt size={18} />,
-      },
-    ]
-  },
+ 
   {
     title: 'Reports',
     label: '',

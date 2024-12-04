@@ -292,7 +292,7 @@ model PurchaseOrder {
   status      POStatus  @default(DRAFT)
   issueDate   DateTime
   deliveryDate DateTime?
-  totalAmount Decimal   @default(0)
+  totalAmount Int   @default(0)
   notes       String?
   
   supplierId  String
@@ -313,8 +313,8 @@ model POItem {
   id          String    @id @default(cuid())
   description String
   quantity    Int
-  unitPrice   Decimal
-  totalPrice  Decimal
+  unitPrice   Int
+  totalPrice  Int
   
   poId        String
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
@@ -330,7 +330,7 @@ model SupplierContract {
   endDate     DateTime?
   status      ContractStatus @default(DRAFT)
   terms       String?   // Contract terms
-  value       Decimal?  // Contract value if applicable
+  value       Int?  // Contract value if applicable
   
   supplierId  String
   supplier    Supplier  @relation(fields: [supplierId], references: [id])
