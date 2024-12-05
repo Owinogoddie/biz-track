@@ -31,13 +31,13 @@ export default function SettingsPage() {
   const settingsOptions = [
     {
       title: "Profile Settings",
-      description: "Manage your personal information, email, and account preferences",
+      description: "Manage your personal information",
       icon: <IconUser className="h-6 w-6" />,
       href: "/dashboard/settings/profile"
     },
     {
       title: "Business Settings",
-      description: "Update your business details, logo, contact information, and more",
+      description: "Update your business details",
       icon: <IconBriefcase className="h-6 w-6" />,
       href: "/dashboard/settings/business"
     }
@@ -83,10 +83,9 @@ export default function SettingsPage() {
       setIsDeleting(false)
     }
   }
-
   return (
     <Layout>
-      <div className="space-y-6 p-6 pb-16">
+      <div className="space-y-6 md:p-4 sm:p-6 pb-16 max-w-full overflow-x-hidden">
         <div className="space-y-0.5">
           <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
           <p className="text-muted-foreground">
@@ -94,19 +93,19 @@ export default function SettingsPage() {
           </p>
         </div>
         <Separator />
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
           {settingsOptions.map((option) => (
             <Button
               key={option.href}
               variant="outline"
-              className="flex h-auto flex-col items-start gap-2 p-6 text-left"
+              className="flex h-auto w-full flex-col items-start gap-2 p-4 sm:p-6 text-left"
               onClick={() => router.push(option.href)}
             >
               <div className="flex items-center gap-2">
                 {option.icon}
                 <h3 className="font-semibold">{option.title}</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {option.description}
               </p>
             </Button>
@@ -124,11 +123,11 @@ export default function SettingsPage() {
                 Delete Business
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-4">
-                  <p>
+                  <p className="break-words">
                     This action cannot be undone. This will permanently delete your
                     business account and all associated data, including:
                   </p>
@@ -140,7 +139,7 @@ export default function SettingsPage() {
                     <li>All financial records and reports</li>
                   </ul>
                   <div className="space-y-2">
-                    <p>
+                    <p className="break-words">
                       Please type <span className="font-semibold">{currentBusiness?.name}</span> to confirm.
                     </p>
                     <Input
@@ -152,12 +151,12 @@ export default function SettingsPage() {
                   </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteBusiness}
                   disabled={confirmBusinessName !== currentBusiness?.name || isDeleting}
-                  className="bg-destructive hover:bg-destructive/90"
+                  className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
                 >
                   {isDeleting ? "Deleting..." : "Delete Business"}
                 </AlertDialogAction>
