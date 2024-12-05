@@ -75,6 +75,8 @@ model Business {
   email         String?
   website       String?
   
+  primaryColor   String?
+  secondaryColor String?
   // Relations
   ownerId       String
   owner         User           @relation(fields: [ownerId], references: [id])
