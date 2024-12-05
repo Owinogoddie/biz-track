@@ -41,8 +41,8 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
           <Avatar className='h-8 w-8'>
-            {user.image ? (
-              <AvatarImage src={user.image} alt={user.name || ''} />
+            {user.picture ? (
+              <AvatarImage src={user.picture} alt={user.name || ''} />
             ) : null}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
