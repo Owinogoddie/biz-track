@@ -21,9 +21,15 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [isCollapsed, setIsCollapsed] = useIsCollapsed();
-  const { hasBusiness, setHasBusiness, setBusinesses, setCurrentBusiness } = useBusinessStore();
+  const { 
+    hasBusiness, 
+    setHasBusiness, 
+    setBusinesses, 
+    currentBusiness,
+    setCurrentBusiness 
+  } = useBusinessStore();
   const { user, isLoading } = useUser();
-  const [showDebug, setShowDebug] = useState(false);
+  // const [showDebug, setShowDebug] = useState(false);
   const [forceShowModal, setForceShowModal] = useState(false);
   const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
   const router = useRouter();
@@ -43,8 +49,16 @@ export default function DashboardLayout({
         if (result.success) {
           setBusinesses(result.businesses);
           setHasBusiness(result.businesses.length > 0);
-          if (result.businesses.length > 0) {
-            setCurrentBusiness(result.businesses[0]);
+          
+          // Only set current business if there isn't one already persisted
+          if (result.businesses.length > 0 && !currentBusiness) {
+            // Try to find the previously selected business in the new list
+            const persistedBusiness = result.businesses.find(
+              b => b.id === currentBusiness?.id
+            );
+            
+            // If found, use it; otherwise use the first business
+            setCurrentBusiness(persistedBusiness || result.businesses[0]);
           }
         }
       } finally {
@@ -55,7 +69,7 @@ export default function DashboardLayout({
     if (!isLoading) {
       loadBusinesses();
     }
-  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router]);
+  }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router, currentBusiness]);
 
   if (isLoading || isLoadingBusinesses) {
     return <LoadingScreen />;
@@ -65,6 +79,7 @@ export default function DashboardLayout({
   if (!user) {
     return null;
   }
+
   return (
     <div className='relative h-full overflow-hidden bg-background'>
       <SkipToMain />
@@ -78,20 +93,6 @@ export default function DashboardLayout({
             <div className='flex w-full items-center justify-between'>
               <Search />
               <div className='flex items-center space-x-4'>
-                {/* <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowDebug(!showDebug)}
-                >
-                  Toggle Debug
-                </Button> */}
-                {/* <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setForceShowModal(true)}
-                >
-                  Show Business Modal
-                </Button> */}
                 <ThemeToggle />
                 <UserNav />
               </div>
@@ -99,14 +100,15 @@ export default function DashboardLayout({
           </Layout.Header>
 
           <Layout.Body>
-            {showDebug && (
+            {/* {showDebug && (
               <div className="p-4 bg-muted rounded-lg mb-4 text-left">
                 <p>User Loading: {String(isLoading)}</p>
                 <p>Has User: {String(!!user)}</p>
                 <p>User ID: {user?.id}</p>
                 <p>Has Business: {String(hasBusiness)}</p>
+                <p>Current Business: {currentBusiness?.name}</p>
               </div>
-            )}
+            )} */}
             {(!isLoading && !hasBusiness && user || forceShowModal) && (
               <CreateBusinessModal 
                 userId={user?.id || ''} 

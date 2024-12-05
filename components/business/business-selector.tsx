@@ -32,6 +32,16 @@ export function BusinessSelector() {
     router.refresh()
   }
 
+  const handleBusinessSelect = (businessName: string) => {
+    const selectedBusiness = businesses.find(b => b.name === businessName)
+    if (selectedBusiness) {
+      setCurrentBusiness(selectedBusiness)
+      setOpen(false)
+      // Optionally refresh the page or update necessary state
+      router.refresh()
+    }
+  }
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -56,10 +66,7 @@ export function BusinessSelector() {
                   <CommandItem
                     key={business.id}
                     value={business.name}
-                    onSelect={() => {
-                      setCurrentBusiness(business)
-                      setOpen(false)
-                    }}
+                    onSelect={() => handleBusinessSelect(business.name)}
                   >
                     <Check
                       className={cn(

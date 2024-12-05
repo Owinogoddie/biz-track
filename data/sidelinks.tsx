@@ -317,5 +317,25 @@ export const sidelinks: SideLink[] = [
     label: '',
     href: '/dashboard/settings',
     icon: <IconSettings size={18} />,
+    sub: [
+      {
+        title: 'General',
+        label: '',
+        href: '/dashboard/settings',
+        icon: <IconSettings size={18} />,
+      },
+      {
+        title: 'Profile',
+        label: '',
+        href: '/dashboard/settings/profile',
+        icon: <IconUserCircle size={18} />,
+      },
+      {
+        title: 'Business',
+        label: '',
+        href: '/dashboard/settings/business',
+        icon: <IconBuildingFactory2 size={18} />,
+      },
+    ]
   },
 ];

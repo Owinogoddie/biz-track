@@ -1,6 +1,10 @@
+"use client"
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { useFieldArray, useForm } from 'react-hook-form'
-import { Button } from '@/components/custom/button'
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -11,177 +15,190 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
-import { zodResolver } from '@hookform/resolvers/zod'
-import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { CldUploadWidget } from 'next-cloudinary'
+import { useUser } from '@/hooks/useUser'
+import { updateProfile } from '@/app/actions/profile'
 
 const profileFormSchema = z.object({
-  username: z
-    .string()
-    .min(2, {
-      message: 'Username must be at least 2 characters.',
-    })
-    .max(30, {
-      message: 'Username must not be longer than 30 characters.',
-    }),
-  email: z
-    .string({
-      required_error: 'Please select an email to display.',
-    })
-    .email(),
-  bio: z.string().max(160).min(4),
-  urls: z
-    .array(
-      z.object({
-        value: z.string().url({ message: 'Please enter a valid URL.' }),
-      })
-    )
-    .optional(),
+  name: z.string().min(2, {
+    message: 'Name must be at least 2 characters.',
+  }),
+  email: z.string().email(),
+  picture: z.string().optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
-// This can come from your database or API.
-const defaultValues: Partial<ProfileFormValues> = {
-  bio: 'I own a computer.',
-  urls: [
-    { value: 'https://shadcn.com' },
-    { value: 'http://twitter.com/shadcn' },
-  ],
-}
+export function ProfileForm() {
+  const { user, isLoading, mutate } = useUser()
+  const [img, setImg] = useState<any>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-export default function ProfileForm() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues,
-    mode: 'onChange',
+    defaultValues: {
+      name: user?.name || '',
+      email: user?.email || '',
+      picture: user?.picture || '',
+    },
   })
 
-  const { fields, append } = useFieldArray({
-    name: 'urls',
-    control: form.control,
-  })
+  // Update form when user data is loaded
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        name: user.name || '',
+        email: user.email || '',
+        picture: user.picture || '',
+      })
+      if (user.picture) {
+        setImg(user.picture)
+      }
+    }
+  }, [user, form])
 
-  function onSubmit(data: ProfileFormValues) {
-    toast({
-      title: 'You submitted the following values:',
-      description: (
-        <pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
-          <code className='text-white'>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    })
+  async function onSubmit(data: ProfileFormValues) {
+    try {
+      setIsSaving(true)
+      const formData = {
+        ...data,
+        picture: img?.secure_url || img || data.picture,
+      }
+      
+      const result = await updateProfile(formData)
+      
+      if (result.success) {
+        await mutate()
+        
+        toast({
+          title: 'Profile updated',
+          description: 'Your profile has been updated successfully.',
+        })
+        
+        if (result.user) {
+          form.reset({
+            name: result.user.name || '',
+            email: result.user.email || '',
+            picture: result.user.picture || '',
+          })
+          if (result.user.picture) {
+            setImg(result.user.picture)
+          }
+        }
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to update profile',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name='username'
+          name="picture"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>Profile Picture</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' {...field} />
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage 
+                      src={img?.secure_url || img || ''} 
+                      alt="Profile" 
+                    />
+                    <AvatarFallback>
+                      {form.watch('name')?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <CldUploadWidget
+                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_PRESET}
+                    onSuccess={(result: any, { widget }: any) => {
+                      setIsUploading(true)
+                      setImg(result.info)
+                      field.onChange(result.info.secure_url)
+                      widget.close()
+                      setIsUploading(false)
+                    }}
+                  >
+                    {({ open }) => (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => open()}
+                        disabled={isUploading || isSaving}
+                      >
+                        {isUploading ? 'Uploading...' : 'Upload Photo'}
+                      </Button>
+                    )}
+                  </CldUploadWidget>
+                </div>
               </FormControl>
               <FormDescription>
-                This is your public display name. It can be your real name or a
-                pseudonym. You can only change this once every 30 days.
+                Click to upload a new profile picture
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
-          name='email'
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Your name" {...field} />
+              </FormControl>
+              <FormDescription>
+                This is your public display name.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select a verified email to display' />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value='m@example.com'>m@example.com</SelectItem>
-                  <SelectItem value='m@google.com'>m@google.com</SelectItem>
-                  <SelectItem value='m@support.com'>m@support.com</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                You can manage verified email addresses in your{' '}
-                <Link href='/examples/forms'>email settings</Link>.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='bio'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bio</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder='Tell us a little bit about yourself'
-                  className='resize-none'
-                  {...field}
-                />
+                <Input placeholder="your@email.com" type="email" {...field} />
               </FormControl>
               <FormDescription>
-                You can <span>@mention</span> other users and organizations to
-                link to them.
+                Your email address is used for notifications and login.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div>
-          {fields.map((field, index) => (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`urls.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className={cn(index !== 0 && 'sr-only')}>
-                    URLs
-                  </FormLabel>
-                  <FormDescription className={cn(index !== 0 && 'sr-only')}>
-                    Add links to your website, blog, or social media profiles.
-                  </FormDescription>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='mt-2'
-            onClick={() => append({ value: '' })}
-          >
-            Add URL
-          </Button>
-        </div>
-        <Button type='submit'>Update profile</Button>
+
+        <Button type="submit" disabled={isUploading || isSaving}>
+          {isSaving ? 'Saving...' : 'Update profile'}
+        </Button>
       </form>
     </Form>
   )
