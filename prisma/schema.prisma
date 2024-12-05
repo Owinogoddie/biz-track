@@ -80,6 +80,7 @@ model Business {
   // Relations
   ownerId       String
   owner         User           @relation(fields: [ownerId], references: [id])
+  openingBalance Int @default(0)
   users         BusinessUser[]
   products      Product[]
   categories    Category[]

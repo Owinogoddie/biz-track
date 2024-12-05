@@ -19,13 +19,15 @@ const businessSchema = z.object({
     phone: z.string().optional(),
     website: z.string().url().optional().or(z.literal('')),
     address: z.string().optional(),
-  })
-  type BusinessFormValues = z.infer<typeof businessSchema>
+    openingBalance: z.number().default(0),
+})
 
-  interface CreateBusinessModalProps {
-    userId: string
-    onClose?: () => void
-  }
+type BusinessFormValues = z.infer<typeof businessSchema>
+
+interface CreateBusinessModalProps {
+  userId: string
+  onClose?: () => void
+}
 
 export function CreateBusinessModal({ userId, onClose }: CreateBusinessModalProps) {
   const { toast } = useToast()
@@ -40,6 +42,7 @@ export function CreateBusinessModal({ userId, onClose }: CreateBusinessModalProp
       phone: '',
       website: '',
       address: '',
+      openingBalance: 0,
     },
   })
 
@@ -51,6 +54,7 @@ export function CreateBusinessModal({ userId, onClose }: CreateBusinessModalProp
         phone: data.phone,
         website: data.website || undefined,
         address: data.address,
+        openingBalance: data.openingBalance,
       })
     
     if (result.success) {
@@ -158,6 +162,25 @@ export function CreateBusinessModal({ userId, onClose }: CreateBusinessModalProp
                   <FormLabel>Address</FormLabel>
                   <FormControl>
                     <Input placeholder="Business address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="openingBalance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Opening Balance</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      placeholder="0.00" 
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

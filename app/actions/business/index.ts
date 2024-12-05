@@ -10,8 +10,9 @@ interface CreateBusinessInput {
   phone?: string
   website?: string
   address?: string
-}
+  openingBalance: number
 
+}
 export async function createBusiness(data: CreateBusinessInput) {
   try {
     const userResult = await getUserAction()
@@ -27,12 +28,27 @@ export async function createBusiness(data: CreateBusinessInput) {
       },
     })
 
+    // Create an opening balance transaction if balance is not zero
+    if (data.openingBalance !== 0) {
+      await prisma.transaction.create({
+        data: {
+          type: 'CREDIT',
+          status: 'COMPLETED',
+          total: data.openingBalance,
+          paid: data.openingBalance,
+          notes: 'Opening Balance',
+          businessId: business.id,
+        },
+      })
+    }
+
     return { success: true, business }
   } catch (error) {
     console.error(error)
     return { success: false, error: 'Failed to create business' }
   }
 }
+
 
 export async function getBusinesses() {
   try {
