@@ -29,10 +29,12 @@ export default function DashboardLayout({
     setCurrentBusiness 
   } = useBusinessStore();
   const { user, isLoading } = useUser();
-  // const [showDebug, setShowDebug] = useState(false);
   const [forceShowModal, setForceShowModal] = useState(false);
   const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
   const router = useRouter();
+
+  // Add this to track if we're waiting for business data to be set
+  const isInitializing = isLoading || isLoadingBusinesses || (user && hasBusiness && !currentBusiness);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -71,7 +73,8 @@ export default function DashboardLayout({
     }
   }, [user, isLoading, setHasBusiness, setBusinesses, setCurrentBusiness, router, currentBusiness]);
 
-  if (isLoading || isLoadingBusinesses) {
+  // Updated condition to use isInitializing
+  if (isInitializing) {
     return <LoadingScreen />;
   }
 
@@ -100,15 +103,6 @@ export default function DashboardLayout({
           </Layout.Header>
 
           <Layout.Body>
-            {/* {showDebug && (
-              <div className="p-4 bg-muted rounded-lg mb-4 text-left">
-                <p>User Loading: {String(isLoading)}</p>
-                <p>Has User: {String(!!user)}</p>
-                <p>User ID: {user?.id}</p>
-                <p>Has Business: {String(hasBusiness)}</p>
-                <p>Current Business: {currentBusiness?.name}</p>
-              </div>
-            )} */}
             {(!isLoading && !hasBusiness && user || forceShowModal) && (
               <CreateBusinessModal 
                 userId={user?.id || ''} 

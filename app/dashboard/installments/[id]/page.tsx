@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { getInstallmentPlan, deleteInstallmentPlan } from '@/app/actions/installment'
+import { getInstallmentPlan, deleteInstallmentPlan, deleteInstallmentPayment } from '@/app/actions/installment'
 import { Calendar, DollarSign, User, Trash2, Edit, Plus, Package, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { AddPaymentModal } from '../_components/add-payment-modal'
 import { EditInstallmentModal } from '../_components/edit-installment-modal'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { PaymentActions } from '../_components/PaymentActions'
 
 const InstallmentPlanDetails = () => {
   const params = useParams()
@@ -20,6 +21,29 @@ const InstallmentPlanDetails = () => {
   const [loading, setLoading] = useState(true)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedPayment, setSelectedPayment] = useState<any>(null)
+
+  const handleDeletePayment = async (paymentId: string) => {
+    const result = await deleteInstallmentPayment(paymentId)
+    if (result.success) {
+      toast({
+        title: 'Payment deleted',
+        description: 'The payment has been deleted successfully.',
+      })
+      fetchPlan()
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error || 'Failed to delete payment',
+      })
+    }
+  }
+
+  const handleEditPayment = (payment: any) => {
+    setSelectedPayment(payment)
+    setShowPaymentModal(true)
+  }
 
   const fetchPlan = async () => {
     if (params.id) {
@@ -179,6 +203,7 @@ const InstallmentPlanDetails = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Notes</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,6 +214,13 @@ const InstallmentPlanDetails = () => {
                   </TableCell>
                   <TableCell>KES {payment.amount.toLocaleString()}</TableCell>
                   <TableCell>{payment.notes || '-'}</TableCell>
+                  <TableCell>
+                    <PaymentActions
+                      payment={payment}
+                      onEdit={handleEditPayment}
+                      onDelete={handleDeletePayment}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -199,9 +231,14 @@ const InstallmentPlanDetails = () => {
       {showPaymentModal && (
         <AddPaymentModal
           installmentPlanId={plan.id}
-          onClose={() => setShowPaymentModal(false)}
+          existingPayment={selectedPayment}
+          onClose={() => {
+            setShowPaymentModal(false)
+            setSelectedPayment(null)
+          }}
           onSuccess={() => {
             setShowPaymentModal(false)
+            setSelectedPayment(null)
             fetchPlan()
           }}
         />

@@ -93,11 +93,7 @@ export async function getInstallmentPlan(id: string) {
   }
 }
 
-export async function addInstallmentPayment(
-  installmentPlanId: string,
-  amount: number,
-  notes?: string
-) {
+export async function updateInstallmentPlan(data: UpdateInstallmentPlanInput) {
   try {
     const userResult = await getUserAction()
     
@@ -105,33 +101,36 @@ export async function addInstallmentPayment(
       return { success: false, error: 'User not authenticated' }
     }
 
-    const payment = await prisma.installmentPayment.create({
-      data: {
-        amount,
-        notes,
-        installmentPlanId,
-      },
-    })
-
-    const plan = await prisma.installmentPlan.findUnique({
-      where: { id: installmentPlanId },
+    const currentPlan = await prisma.installmentPlan.findUnique({
+      where: { id: data.id },
       include: { payments: true },
     })
 
-    if (plan) {
-      const totalPaid = plan.payments.reduce((sum, p) => sum + p.amount, 0)
-      await prisma.installmentPlan.update({
-        where: { id: installmentPlanId },
-        data: {
-          paidAmount: totalPaid,
-          status: totalPaid >= plan.totalAmount ? 'COMPLETED' : 'ACTIVE',
-        },
-      })
+    if (!currentPlan) {
+      return { success: false, error: 'Plan not found' }
     }
 
-    return { success: true, payment }
+    const totalPaid = currentPlan.payments.reduce((sum, p) => sum + p.amount, 0)
+    const newTotalAmount = data.totalAmount ?? currentPlan.totalAmount
+
+    const plan = await prisma.installmentPlan.update({
+      where: { id: data.id },
+      data: {
+        totalAmount: data.totalAmount,
+        endDate: data.endDate,
+        notes: data.notes,
+        status: totalPaid >= newTotalAmount ? 'COMPLETED' : 'ACTIVE',
+      },
+      include: {
+        product: true,
+        customer: true,
+        payments: true,
+      },
+    })
+
+    return { success: true, plan }
   } catch (error) {
-    return { success: false, error: 'Failed to add payment' }
+    return { success: false, error: 'Failed to update installment plan' }
   }
 }
 
@@ -153,7 +152,12 @@ export async function deleteInstallmentPlan(id: string) {
   }
 }
 
-export async function updateInstallmentPlan(data: UpdateInstallmentPlanInput) {
+
+export async function addInstallmentPayment(
+  installmentPlanId: string,
+  amount: number,
+  notes?: string
+) {
   try {
     const userResult = await getUserAction()
     
@@ -161,25 +165,87 @@ export async function updateInstallmentPlan(data: UpdateInstallmentPlanInput) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const plan = await prisma.installmentPlan.update({
-      where: { id: data.id },
+    // Check if plan is already completed
+    const existingPlan = await prisma.installmentPlan.findUnique({
+      where: { id: installmentPlanId },
+      include: { payments: true },
+    })
+
+    if (!existingPlan) {
+      return { success: false, error: 'Installment plan not found' }
+    }
+
+    if (existingPlan.status === 'COMPLETED') {
+      return { success: false, error: 'Cannot add payment to a completed installment plan' }
+    }
+
+    const payment = await prisma.installmentPayment.create({
       data: {
-        totalAmount: data.totalAmount,
-        endDate: data.endDate,
-        notes: data.notes,
-      },
-      include: {
-        product: true,
-        customer: true,
-        payments: true,
+        amount,
+        notes,
+        installmentPlanId,
       },
     })
 
-    return { success: true, plan }
+    const totalPaid = existingPlan.payments.reduce((sum, p) => sum + p.amount, 0) + amount
+    await prisma.installmentPlan.update({
+      where: { id: installmentPlanId },
+      data: {
+        paidAmount: totalPaid,
+        status: totalPaid >= existingPlan.totalAmount ? 'COMPLETED' : 'ACTIVE',
+      },
+    })
+
+    return { success: true, payment }
   } catch (error) {
-    return { success: false, error: 'Failed to update installment plan' }
+    return { success: false, error: 'Failed to add payment' }
   }
 }
+
+
+export async function updateInstallmentPayment(
+  id: string,
+  amount: number,
+  notes?: string
+) {
+  try {
+    const userResult = await getUserAction()
+    
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const payment = await prisma.installmentPayment.update({
+      where: { id },
+      data: {
+        amount,
+        notes,
+      },
+    })
+
+    // Update plan's paid amount and status
+    const plan = await prisma.installmentPlan.findUnique({
+      where: { id: payment.installmentPlanId },
+      include: { payments: true },
+    })
+
+    if (plan) {
+      const totalPaid = plan.payments.reduce((sum, p) => sum + p.amount, 0)
+      await prisma.installmentPlan.update({
+        where: { id: payment.installmentPlanId },
+        data: {
+          paidAmount: totalPaid,
+          status: totalPaid >= plan.totalAmount ? 'COMPLETED' : 'ACTIVE',
+        },
+      })
+    }
+
+    return { success: true, payment }
+  } catch (error) {
+    return { success: false, error: 'Failed to update payment' }
+  }
+}
+
 
 export async function deleteInstallmentPayment(id: string) {
   try {
@@ -193,7 +259,7 @@ export async function deleteInstallmentPayment(id: string) {
       where: { id },
     })
 
-    // Update plan's paid amount
+    // Update plan's paid amount and status
     const plan = await prisma.installmentPlan.findUnique({
       where: { id: payment.installmentPlanId },
       include: { payments: true },
