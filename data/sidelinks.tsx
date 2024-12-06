@@ -43,6 +43,39 @@ export const sidelinks: SideLink[] = [
     icon: <IconLayoutDashboard size={18} />,
   },
   {
+    title: 'Funding',
+    label: '',
+    href: '/dashboard/funding',
+    icon: <DollarSign size={18} />,
+    sub: [
+      {
+        title: 'Overview',
+        label: '',
+        href: '/dashboard/funding',
+        icon: <ChartBar size={18} />,
+      },
+      {
+        title: 'Funding Sources',
+        label: '',
+        href: '/dashboard/funding/sources',
+        icon: <IconMoneybag size={18} />,
+      },
+      {
+        title: 'Funding Reports',
+        label: '',
+        href: '/dashboard/funding/reports',
+        icon: <Receipt size={18} />,
+      },
+      {
+        title: 'Transactions',
+        label: '',
+        href: '/dashboard/funding/transactions',
+        icon: <CreditCard size={18} />,
+      }
+    ]
+  },
+  
+  {
     title: 'Products',
     label: '',
     href: '/dashboard/products',

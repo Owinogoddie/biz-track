@@ -13,12 +13,10 @@ export const useExpenditureStore = create<ExpenditureStore>((set) => ({
   expenditures: [],
   setExpenditures: (expenditures) => set({ expenditures }),
   addExpenditure: (expenditure) =>
-    set((state) => ({
-      expenditures: [expenditure, ...state.expenditures],
-    })),
+    set((state) => ({ expenditures: [...state.expenditures, expenditure] })),
   updateExpenditure: (expenditure) =>
     set((state) => ({
-      expenditures: state.expenditures.map((e) =>
+      expenditures: state.expenditures.map((e) => 
         e.id === expenditure.id ? expenditure : e
       ),
     })),

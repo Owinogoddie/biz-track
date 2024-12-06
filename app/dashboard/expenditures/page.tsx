@@ -8,6 +8,7 @@ import { getColumns } from "./_components/columns"
 import { ExpenditureFormModal } from "./_components/expenditure-form-modal"
 import { getExpenditures } from "@/app/actions/expenditure"
 import { getSales } from "@/app/actions/sale"
+import { getFundingSources } from "@/app/actions/funding-source"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { addDays } from "date-fns"
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip } from "recharts"
@@ -16,15 +17,23 @@ import { formatCurrency } from "@/lib/formatters"
 import { DatePickerWithRange } from "@/components/DateRangePicker"
 import { DateRange } from "react-day-picker"
 
+interface FundingSource {
+  id: string
+  name: string
+  amount: number
+  expenditures: any[]
+}
+
 export default function Expenditures() {
     const currentBusiness = useBusinessStore((state) => state.currentBusiness)
     const { expenditures, setExpenditures } = useExpenditureStore()
     const [sales, setSales] = useState<any[]>([])
+    const [fundingSources, setFundingSources] = useState<FundingSource[]>([])
     const [dateRange, setDateRange] = useState<DateRange>({
       from: addDays(new Date(), -30),
       to: new Date(),
     })
-    const [groupBy, setGroupBy] = useState<"daily" | "monthly" | "category">("monthly")
+    const [groupBy, setGroupBy] = useState<"daily" | "monthly" | "category" | "funding">("monthly")
   
     useEffect(() => {
       async function fetchData() {
@@ -36,6 +45,10 @@ export default function Expenditures() {
         const salesResult = await getSales(currentBusiness.id)
         if (salesResult.success) {
           setSales(salesResult.sales)
+        }
+        const fundingResult = await getFundingSources(currentBusiness.id)
+        if (fundingResult.success) {
+          setFundingSources(fundingResult.fundingSources)
         }
       }
       fetchData()
@@ -54,161 +67,210 @@ export default function Expenditures() {
              saleDate >= dateRange.from && 
              saleDate <= dateRange.to
     })
-  const totalExpenses = filteredExpenditures.reduce((sum, exp) => sum + exp.amount, 0)
-  const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0)
-  const netIncome = totalSales - totalExpenses
 
-  const categoryData = filteredExpenditures.reduce((acc, exp) => {
-    acc[exp.category] = (acc[exp.category] || 0) + exp.amount
-    return acc
-  }, {} as Record<string, number>)
+    const totalExpenses = filteredExpenditures.reduce((sum, exp) => sum + exp.amount, 0)
+    const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0)
+    const netIncome = totalSales - totalExpenses
+    const totalFunding = fundingSources.reduce((sum, source) => sum + source.amount, 0)
 
-  const getChartData = () => {
-    if (groupBy === "category") {
-      return Object.entries(categoryData).map(([category, amount]) => ({
-        name: category,
-        expenses: amount
-      }))
+    const categoryData = filteredExpenditures.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount
+      return acc
+    }, {} as Record<string, number>)
+
+    const getFundingData = () => {
+      return fundingSources.map(source => {
+        const sourceExpenditures = filteredExpenditures.filter(
+          exp => exp.fundingSourceId === source.id
+        )
+        const usedAmount = sourceExpenditures.reduce((sum, exp) => sum + exp.amount, 0)
+        return {
+          name: source.name,
+          total: source.amount,
+          used: usedAmount,
+          available: source.amount - usedAmount
+        }
+      })
     }
 
-    const data: any[] = []
-    let format = groupBy === "daily" ? "MM/dd" : "yyyy-MM"
+    const getChartData = () => {
+      if (groupBy === "funding") {
+        return getFundingData()
+      }
+
+      if (groupBy === "category") {
+        return Object.entries(categoryData).map(([category, amount]) => ({
+          name: category,
+          expenses: amount
+        }))
+      }
+
+      const data: any[] = []
+      let format = groupBy === "daily" ? "MM/dd" : "yyyy-MM"
+      
+      filteredExpenditures.forEach(exp => {
+        const date = new Date(exp.date)
+        const key = date.toLocaleDateString('en-US', 
+          groupBy === "daily" 
+            ? { month: "2-digit", day: "2-digit" }
+            : { year: "numeric", month: "2-digit" }
+        )
+        
+        const existingEntry = data.find(d => d.name === key)
+        if (existingEntry) {
+          existingEntry.expenses += exp.amount
+        } else {
+          data.push({ name: key, expenses: exp.amount })
+        }
+      })
+
+      filteredSales.forEach(sale => {
+        const date = new Date(sale.createdAt)
+        const key = date.toLocaleDateString('en-US',
+          groupBy === "daily"
+            ? { month: "2-digit", day: "2-digit" }
+            : { year: "numeric", month: "2-digit" }
+        )
+        
+        const existingEntry = data.find(d => d.name === key)
+        if (existingEntry) {
+          existingEntry.sales = (existingEntry.sales || 0) + sale.total
+        } else {
+          data.push({ name: key, sales: sale.total, expenses: 0 })
+        }
+      })
+
+      return data.sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime())
+    }
+
+    const availableBalance = totalSales - totalExpenses
     
-    filteredExpenditures.forEach(exp => {
-      const date = new Date(exp.date)
-      const key = date.toLocaleDateString('en-US', 
-        groupBy === "daily" 
-          ? { month: "2-digit", day: "2-digit" }
-          : { year: "numeric", month: "2-digit" }
-      )
-      
-      const existingEntry = data.find(d => d.name === key)
-      if (existingEntry) {
-        existingEntry.expenses += exp.amount
-      } else {
-        data.push({ name: key, expenses: exp.amount })
-      }
-    })
+    const columns = getColumns({ totalSales, expenditures })
+    return (
+      <div className="mx-auto py-10 space-y-6">
+        <div className="flex justify-between items-center gap-2 flex-wrap">
+          <h1 className="text-3xl font-bold">Expenditures</h1>
+          <ExpenditureFormModal 
+            availableBalance={availableBalance}
+            sales={totalSales}
+          >
+            <Button>Add Expenditure</Button>
+          </ExpenditureFormModal>
+        </div>
 
-    filteredSales.forEach(sale => {
-      const date = new Date(sale.createdAt)
-      const key = date.toLocaleDateString('en-US',
-        groupBy === "daily"
-          ? { month: "2-digit", day: "2-digit" }
-          : { year: "numeric", month: "2-digit" }
-      )
-      
-      const existingEntry = data.find(d => d.name === key)
-      if (existingEntry) {
-        existingEntry.sales = (existingEntry.sales || 0) + sale.total
-      } else {
-        data.push({ name: key, sales: sale.total, expenses: 0 })
-      }
-    })
+        <div className="flex gap-4 items-center flex-wrap">
+          <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+          <Select value={groupBy} onValueChange={(value: any) => setGroupBy(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select grouping" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="category">By Category</SelectItem>
+              <SelectItem value="funding">By Funding Source</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-    return data.sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime())
-  }
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Expenses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Sales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(totalSales)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Funding</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totalFunding)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Net Income</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-2xl font-bold ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(netIncome)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-  const availableBalance = totalSales - totalExpenses
-  
-  const columns = getColumns({ totalSales, expenditures })
-  return (
-    <div className=" mx-auto py-10 space-y-6">
-      <div className="flex justify-between items-center gap-2 flex-wrap">
-        <h1 className="text-3xl font-bold">Expenditures</h1>
-        <ExpenditureFormModal availableBalance={availableBalance}>
-                  <Button>Add Expenditure</Button>
-        </ExpenditureFormModal>
-      </div>
-
-      <div className="flex gap-4 items-center flex-wrap">
-        <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-        <Select value={groupBy} onValueChange={(value: "daily" | "monthly" | "category") => setGroupBy(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select grouping" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-            <SelectItem value="category">By Category</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Total Expenses</CardTitle>
+            <CardTitle>
+              {groupBy === "funding" 
+                ? "Funding Sources Overview"
+                : groupBy === "category" 
+                  ? "Expenses by Category" 
+                  : "Sales vs Expenses"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Sales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(totalSales)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Net Income</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(netIncome)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{groupBy === "category" ? "Expenses by Category" : "Sales vs Expenses"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getChartData()}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip 
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-sm">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="flex flex-col">
-                              <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                {label}
-                              </span>
-                              {payload.map((entry) => (
-                                <span key={entry.name} className="font-bold text-muted-foreground">
-                                  {entry.name}: {formatCurrency(Number(entry.value) || 0)}
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getChartData()}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                  {label}
                                 </span>
-                              ))}
+                                {payload.map((entry) => (
+                                  <span key={entry.name} className="font-bold text-muted-foreground">
+                                    {entry.name}: {formatCurrency(Number(entry.value) || 0)}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="expenses" name="Expenses" fill="#ef4444" />
-                {groupBy !== "category" && (
-                  <Bar dataKey="sales" name="Sales" fill="#22c55e" />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Legend />
+                  {groupBy === "funding" ? (
+                    <>
+                      <Bar dataKey="total" name="Total Funding" fill="#3b82f6" />
+                      <Bar dataKey="used" name="Used Amount" fill="#ef4444" />
+                      <Bar dataKey="available" name="Available" fill="#22c55e" />
+                    </>
+                  ) : (
+                    <>
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" />
+                      {groupBy !== "category" && (
+                        <Bar dataKey="sales" name="Sales" fill="#22c55e" />
+                      )}
+                    </>
+                  )}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      <DataTable columns={columns} data={filteredExpenditures} 
-        searchKey="category"/>
-    </div>
-  )
+        <DataTable columns={columns} data={filteredExpenditures} searchKey="category"/>
+      </div>
+    )
 }

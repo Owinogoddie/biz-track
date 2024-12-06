@@ -95,6 +95,7 @@ expenditures Expenditure[]
   installmentPlans InstallmentPlan[] 
  purchaseOrders PurchaseOrder[]
 supplierContracts SupplierContract[]
+resourceBalances FundingSource[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -196,17 +197,20 @@ enum SaleStatus {
   CANCELLED
 }
 model Expenditure {
-  id          String      @id @default(cuid())
-  businessId  String
+  id          String        @id @default(cuid())
   amount      Float
   category    String
   description String
-  date        DateTime    @default(now())
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  business    Business    @relation(fields: [businessId], references: [id])
+  date        DateTime      @default(now())
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id])
+  fundingSourceId String?   // Optional - can be from general sales revenue if null
+  fundingSource FundingSource? @relation(fields: [fundingSourceId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([businessId])
+  @@index([fundingSourceId])
 }
 model InstallmentPlan {
   id            String    @id @default(cuid())
@@ -518,6 +522,8 @@ model Waste {
 model Transaction {
   id            String            @id @default(cuid())
   type          TransactionType
+  fundingSourceId String?       // Link to the funding source if this transaction uses specific funds
+  fundingSource FundingSource?  @relation(fields: [fundingSourceId], references: [id])
   status        TransactionStatus @default(PENDING)
   total         Float
   paid          Float            @default(0)
@@ -525,7 +531,7 @@ model Transaction {
   
   businessId    String
   business      Business          @relation(fields: [businessId], references: [id])
-  customerId    String?           // Made optional
+  customerId    String?          
   customer      Customer?         @relation(fields: [customerId], references: [id])
   supplierId    String?
   supplier      Supplier?         @relation(fields: [supplierId], references: [id])
@@ -536,7 +542,67 @@ model Transaction {
   
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([supplierId])
 }
+model FundingSource {
+  id          String      @id @default(cuid())
+  type        FundingType
+  name        String      // e.g., "KCB Bank Loan", "Business Grant A"
+  description String?
+  provider    String      // e.g., "KCB Bank", "Government", "Angel Investor"
+  amount      Float
+  terms       Json?       // For storing flexible terms (interest rates, repayment schedule, etc.)
+  status      String?     // e.g., "ACTIVE", "REPAID", "PENDING"
+  startDate   DateTime    @default(now())
+  endDate     DateTime?   // Optional end date for loans or time-bound funding
+  businessId  String
+  business    Business    @relation(fields: [businessId], references: [id])
+  transactions Transaction[] // Link to transactions for tracking usage
+  expenditures Expenditure[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([businessId])
+}
+
+enum FundingType {
+  SAVINGS
+  PERSONAL_FUNDS
+  GRANT
+  BUSINESS_OPERATIONS
+  SALE
+  PURCHASE
+  RETURN
+  TRANSFER
+  CREDIT
+  GIFT
+  LOAN
+  INVESTMENT
+  EXPENSE
+  OTHER
+}
+
+enum TransactionType  {
+  CREDIT 
+  DEBIT 
+  WITHDRAWAL 
+  TRANSFER
+  REFUND 
+  PAYMENT 
+  LOAN
+  SALARY 
+  COMMISSION 
+  DIVIDEND 
+  EXPENSE
+  PURCHASE
+  RETURN
+  SALE
+  OTHER
+}
+
 
 model TransactionItem {
   id            String      @id @default(cuid())
@@ -628,13 +694,7 @@ enum BusinessRole {
   STAFF
 }
 
-enum TransactionType {
-  SALE
-  PURCHASE
-  RETURN
-  TRANSFER
-  CREDIT
-}
+
 
 enum TransactionStatus {
   PENDING

@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Expenditure } from "@prisma/client"
+import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { DataTableRowActions } from "@/components/ui/data-table-row-actions"
 import { useToast } from "@/hooks/use-toast"
 import { useExpenditureStore } from "@/store/useExpenditureStore"
 import { deleteExpenditure } from "@/app/actions/expenditure"
-import { ExpenditureFormModal } from "./expenditure-form-modal"
+import { ExpenditureWithFundingSource } from "@/types/expenditure"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,13 +21,23 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/formatters"
+import { ExpenditureFormModal } from "./expenditure-form-modal"
+
+const sourceLabels: Record<string, string> = {
+  BUSINESS_OPERATIONS: "Business Operations",
+  LOAN: "Loans",
+  GIFT: "Gifts",
+  INVESTMENT: "Investments",
+  PERSONAL_FUNDS: "Personal Funds",
+  OTHER: "Other Sources"
+}
 
 interface GetColumnsProps {
   totalSales: number
-  expenditures: Expenditure[]
+  expenditures: ExpenditureWithFundingSource[]
 }
 
-export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): ColumnDef<Expenditure>[] => [
+export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): ColumnDef<ExpenditureWithFundingSource>[] => [
   {
     accessorKey: "date",
     header: ({ column }) => (
@@ -36,6 +46,31 @@ export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): Colum
     cell: ({ row }) => {
       const date = new Date(row.getValue("date"))
       return <div>{date.toLocaleDateString()}</div>
+    },
+  },
+  {
+    accessorKey: "fundingSource",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Funding Source" />
+    ),
+    cell: ({ row }) => {
+      const fundingSource = row.original.fundingSource
+      return fundingSource ? (
+        <Badge variant="secondary">
+          {fundingSource.name}
+        </Badge>
+      ) : (
+        <Badge variant="outline">Sales Revenue</Badge>
+      )
+    },
+  },
+  {
+    accessorKey: "source",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Source" />
+    ),
+    cell: ({ row }) => {
+      return <div>{sourceLabels[row.getValue("source") as string]}</div>
     },
   },
   {
@@ -68,9 +103,8 @@ export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): Colum
       const { toast } = useToast()
       const { removeExpenditure } = useExpenditureStore()
       
-      // Calculate available balance for edit modal
       const totalExpenses = expenditures.reduce((sum, exp) => sum + exp.amount, 0)
-      const availableBalance = totalSales - totalExpenses + row.original.amount // Add back current expenditure amount for edit
+      const availableBalance = totalSales - totalExpenses + row.original.amount
 
       const handleDelete = async () => {
         setIsDeleting(true)
@@ -112,6 +146,7 @@ export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): Colum
             <ExpenditureFormModal 
               expenditure={row.original}
               availableBalance={availableBalance}
+              sales={totalSales}
             >
               <span />
             </ExpenditureFormModal>

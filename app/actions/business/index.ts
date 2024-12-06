@@ -1,7 +1,8 @@
-'use server'
+"use server"
 
 import prisma from '@/lib/prisma'
 import { getUserAction } from '@/app/actions/auth'
+import { FundingType, TransactionType } from '@prisma/client'
 
 interface CreateBusinessInput {
   name: string
@@ -11,8 +12,9 @@ interface CreateBusinessInput {
   website?: string
   address?: string
   openingBalance: number
-
+  openingBalanceSource?: FundingType
 }
+
 export async function createBusiness(data: CreateBusinessInput) {
   try {
     const userResult = await getUserAction()
@@ -30,14 +32,29 @@ export async function createBusiness(data: CreateBusinessInput) {
 
     // Create an opening balance transaction if balance is not zero
     if (data.openingBalance !== 0) {
+      // First create a funding source for the opening balance
+      const fundingSource = await prisma.fundingSource.create({
+        data: {
+          type: data.openingBalanceSource || FundingType.PERSONAL_FUNDS,
+          name: "Opening Balance",
+          description: "Initial business capital",
+          provider: "Business Owner",
+          amount: data.openingBalance,
+          status: "ACTIVE",
+          businessId: business.id,
+        }
+      })
+
+      // Then create the transaction linked to this funding source
       await prisma.transaction.create({
         data: {
-          type: 'CREDIT',
-          status: 'COMPLETED',
+          type: TransactionType.CREDIT,
+          status: 'PENDING',
           total: data.openingBalance,
           paid: data.openingBalance,
           notes: 'Opening Balance',
           businessId: business.id,
+          fundingSourceId: fundingSource.id
         },
       })
     }
@@ -48,7 +65,6 @@ export async function createBusiness(data: CreateBusinessInput) {
     return { success: false, error: 'Failed to create business' }
   }
 }
-
 
 export async function getBusinesses() {
   try {
