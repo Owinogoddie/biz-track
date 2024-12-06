@@ -569,6 +569,7 @@ model FundingSource {
 }
 
 enum FundingType {
+  OPENING_BALANCE
   SAVINGS
   PERSONAL_FUNDS
   GRANT

@@ -57,21 +57,21 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Funding Sources',
         label: '',
-        href: '/dashboard/funding/sources',
+        href: '/dashboard/funding',
         icon: <IconMoneybag size={18} />,
       },
-      {
-        title: 'Funding Reports',
-        label: '',
-        href: '/dashboard/funding/reports',
-        icon: <Receipt size={18} />,
-      },
-      {
-        title: 'Transactions',
-        label: '',
-        href: '/dashboard/funding/transactions',
-        icon: <CreditCard size={18} />,
-      }
+      // {
+      //   title: 'Funding Reports',
+      //   label: '',
+      //   href: '/dashboard/funding/reports',
+      //   icon: <Receipt size={18} />,
+      // },
+      // {
+      //   title: 'Transactions',
+      //   label: '',
+      //   href: '/dashboard/funding/transactions',
+      //   icon: <CreditCard size={18} />,
+      // }
     ]
   },
   

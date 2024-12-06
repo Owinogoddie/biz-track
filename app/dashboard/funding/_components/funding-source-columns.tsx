@@ -1,7 +1,7 @@
-'use client'
-
 import { ColumnDef } from '@tanstack/react-table'
 import { FundingSource } from '@prisma/client'
+import { Eye } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header'
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions'
 import { EditFundingSourceModal } from './edit-funding-source-modal'
@@ -9,16 +9,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useFundingSourceStore } from '@/store/useFundingSourceStore'
 import { deleteFundingSource } from '@/app/actions/funding-source'
 import { Badge } from '@/components/ui/badge'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Button } from '@/components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
 import { useState } from 'react'
 import { formatCurrency } from '@/lib/formatters'
@@ -31,7 +23,7 @@ export const columns: ColumnDef<FundingSource>[] = [
     ),
     cell: ({ row }) => {
       const type = row.getValue('type') as string
-      return <Badge variant="outline">{type.replace('_', ' ')}</Badge>
+      return <span className="capitalize">{type.replace('_', ' ').toLowerCase()}</span>
     },
   },
   {
@@ -53,7 +45,7 @@ export const columns: ColumnDef<FundingSource>[] = [
     ),
     cell: ({ row }) => {
       const amount = row.getValue('amount') as number
-      return <div>{formatCurrency(amount)}</div>
+      return <span className="font-medium">{formatCurrency(amount)}</span>
     },
   },
   {
@@ -64,12 +56,13 @@ export const columns: ColumnDef<FundingSource>[] = [
     cell: ({ row }) => {
       const status = row.getValue('status') as string
       if (!status) return null
-      return <Badge>{status}</Badge>
+      return <Badge variant="outline" className="capitalize">{status.toLowerCase()}</Badge>
     },
   },
   {
     id: 'actions',
     cell: ({ row }) => {
+      const router = useRouter()
       const [showEditModal, setShowEditModal] = useState(false)
       const [showDeleteDialog, setShowDeleteDialog] = useState(false)
       const [isDeleting, setIsDeleting] = useState(false)
@@ -98,6 +91,11 @@ export const columns: ColumnDef<FundingSource>[] = [
       }
 
       const actions = [
+        {
+          label: 'View Details',
+          action: () => router.push(`/dashboard/funding/${row.original.id}`),
+          icon: Eye
+        },
         {
           label: 'Edit',
           action: () => setShowEditModal(true)

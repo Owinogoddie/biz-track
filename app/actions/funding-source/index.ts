@@ -19,21 +19,31 @@ export interface CreateFundingSourceInput {
 
 export async function createFundingSource(data: CreateFundingSourceInput) {
   try {
-    const userResult = await getUserAction()
-    
+    const userResult = await getUserAction();
+
     if (!userResult.success || !userResult.user) {
-      return { success: false, error: 'User not authenticated' }
+      return { success: false, error: 'User not authenticated' };
     }
 
-    const fundingSource = await prisma.fundingSource.create({
-      data
-    })
+    const fundingSource = await prisma.fundingSource.create({ data });
 
-    return { success: true, fundingSource }
+    if (data.type === FundingType.OPENING_BALANCE) {
+      await prisma.business.update({
+        where: { id: data.businessId },
+        data: {
+          openingBalance: {
+            increment: data.amount,
+          },
+        },
+      });
+    }
+
+    return { success: true, fundingSource };
   } catch (error) {
-    return { success: false, error: 'Failed to create funding source' }
+    return { success: false, error: 'Failed to create funding source' };
   }
 }
+
 
 export async function getFundingSources(businessId: string) {
   try {
@@ -64,37 +74,72 @@ export async function getFundingSources(businessId: string) {
 
 export async function updateFundingSource(id: string, data: Partial<CreateFundingSourceInput>) {
   try {
-    const userResult = await getUserAction()
-    
+    const userResult = await getUserAction();
+
     if (!userResult.success || !userResult.user) {
-      return { success: false, error: 'User not authenticated' }
+      return { success: false, error: 'User not authenticated' };
     }
 
-    const fundingSource = await prisma.fundingSource.update({
-      where: { id },
-      data
-    })
+    const existingSource = await prisma.fundingSource.findUnique({ where: { id } });
 
-    return { success: true, fundingSource }
+    if (!existingSource) {
+      return { success: false, error: 'Funding source not found' };
+    }
+
+    const updatedSource = await prisma.fundingSource.update({
+      where: { id },
+      data,
+    });
+
+    if (existingSource.type === FundingType.OPENING_BALANCE) {
+      const amountDifference = (data.amount ?? existingSource.amount) - existingSource.amount;
+
+      await prisma.business.update({
+        where: { id: existingSource.businessId },
+        data: {
+          openingBalance: {
+            increment: amountDifference,
+          },
+        },
+      });
+    }
+
+    return { success: true, fundingSource: updatedSource };
   } catch (error) {
-    return { success: false, error: 'Failed to update funding source' }
+    return { success: false, error: 'Failed to update funding source' };
   }
 }
 
+
 export async function deleteFundingSource(id: string) {
   try {
-    const userResult = await getUserAction()
-    
+    const userResult = await getUserAction();
+
     if (!userResult.success || !userResult.user) {
-      return { success: false, error: 'User not authenticated' }
+      return { success: false, error: 'User not authenticated' };
     }
 
-    await prisma.fundingSource.delete({
-      where: { id }
-    })
+    const existingSource = await prisma.fundingSource.findUnique({ where: { id } });
 
-    return { success: true }
+    if (!existingSource) {
+      return { success: false, error: 'Funding source not found' };
+    }
+
+    await prisma.fundingSource.delete({ where: { id } });
+
+    if (existingSource.type === FundingType.OPENING_BALANCE) {
+      await prisma.business.update({
+        where: { id: existingSource.businessId },
+        data: {
+          openingBalance: {
+            decrement: existingSource.amount,
+          },
+        },
+      });
+    }
+
+    return { success: true };
   } catch (error) {
-    return { success: false, error: 'Failed to delete funding source' }
+    return { success: false, error: 'Failed to delete funding source' };
   }
 }
