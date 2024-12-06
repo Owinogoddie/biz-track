@@ -124,49 +124,49 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Stock Levels',
         label: '',
-        href: '/dashboard/inventory/stock',
+        href: '/dashboard/inventory',
         icon: <IconBox size={18} />,
       },
       {
         title: 'Restock',
         label: '',
-        href: '/dashboard/inventory/restock',
+        href: '/dashboard/inventory',
         icon: <IconTruck size={18} />,
       },
     ]
   },
-  {
-    title: 'Human Resources',
-    label: '',
-    href: '/dashboard/hr',
-    icon: <IconUserPlus size={18} />,
-    sub: [
-      {
-        title: 'Full-Time Employees',
-        label: '',
-        href: '/dashboard/hr/employees',
-        icon: <IconUserCheck size={18} />,
-      },
-      {
-        title: 'Casual Workers',
-        label: '',
-        href: '/dashboard/hr/casual-workers',
-        icon: <IconUserSearch size={18} />,
-      },
-      {
-        title: 'Contractors',
-        label: '',
-        href: '/dashboard/hr/contractors',
-        icon: <IconBriefcase size={18} />,
-      },
-      {
-        title: 'Payroll',
-        label: '',
-        href: '/dashboard/hr/payroll',
-        icon: <IconMoneybag size={18} />,
-      },
-    ]
-  },
+  // {
+  //   title: 'Human Resources',
+  //   label: '',
+  //   href: '/dashboard/hr',
+  //   icon: <IconUserPlus size={18} />,
+  //   sub: [
+  //     {
+  //       title: 'Full-Time Employees',
+  //       label: '',
+  //       href: '/dashboard/hr/employees',
+  //       icon: <IconUserCheck size={18} />,
+  //     },
+  //     {
+  //       title: 'Casual Workers',
+  //       label: '',
+  //       href: '/dashboard/hr/casual-workers',
+  //       icon: <IconUserSearch size={18} />,
+  //     },
+  //     {
+  //       title: 'Contractors',
+  //       label: '',
+  //       href: '/dashboard/hr/contractors',
+  //       icon: <IconBriefcase size={18} />,
+  //     },
+  //     {
+  //       title: 'Payroll',
+  //       label: '',
+  //       href: '/dashboard/hr/payroll',
+  //       icon: <IconMoneybag size={18} />,
+  //     },
+  //   ]
+  // },
   {
     title: 'Suppliers & Partnerships',
     label: '',
