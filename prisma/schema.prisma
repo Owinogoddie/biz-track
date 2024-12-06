@@ -96,6 +96,8 @@ expenditures Expenditure[]
  purchaseOrders PurchaseOrder[]
 supplierContracts SupplierContract[]
 resourceBalances FundingSource[]
+
+  inventoryAssets InventoryAsset[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -385,6 +387,54 @@ enum ContractStatus {
   EXPIRED
   TERMINATED
 }
+enum MaintenanceStatus {
+  GOOD
+  NEEDS_ATTENTION
+  UNDER_MAINTENANCE
+  CRITICAL
+}
+
+enum AssetType {
+  EQUIPMENT
+  VEHICLE
+  TOOL
+  OTHER
+}
+
+model InventoryAsset {
+  id              String            @id @default(cuid())
+  name            String
+  description     String?
+  assetType       AssetType
+  serialNumber    String?
+  purchaseDate    DateTime
+  condition       MaintenanceStatus @default(GOOD)
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  notes           String?
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id])
+  maintenanceLogs MaintenanceLog[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([businessId])
+}
+
+model MaintenanceLog {
+  id              String        @id @default(cuid())
+  description     String
+  date            DateTime
+  cost            Float?
+  performedBy     String?
+  assetId         String
+  asset           InventoryAsset @relation(fields: [assetId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([assetId])
+}
+
 model Customer {
   id          String        @id @default(cuid())
   name        String

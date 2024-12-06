@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import { useEffect, useMemo, useState } from 'react';
 import { Package, Users, Layers, Activity, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,15 +6,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatsCard } from './_components/stats-card';
 import { ProductionChart } from './_components/production-chart';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useFinancialData } from '@/hooks/useFinancialData';
 import { useBusinessStore } from '@/store/useBusinessStore';
 import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { Analytics } from './_components/analytics';
 import { Reports } from './_components/reports';
+import { FinancialOverview } from './_components/financial-overview';
 import { LoadingScreen } from '@/components/loading-screen';
 
 const DashboardPage = () => {
   const { currentBusiness } = useBusinessStore();
-  const { products, productions, employees, categories, isLoading } = useDashboardData(currentBusiness?.id || '');
+  const { products, productions, employees, categories, isLoading: isDashboardLoading } = useDashboardData(currentBusiness?.id || '');
+  const { 
+    currentMonthSales,
+    currentMonthExpenditures,
+    previousMonthBalance,
+    initialBalance,
+    isLoading: isFinancialLoading 
+  } = useFinancialData(currentBusiness?.id || '');
   const [currency, setCurrency] = useState('KES');
 
   const productionData = useMemo(() => {
@@ -38,8 +47,8 @@ const DashboardPage = () => {
     return last30Days;
   }, [productions]);
 
-  if (isLoading) {
-    return <div><LoadingScreen/> </div>;
+  if (isDashboardLoading || isFinancialLoading) {
+    return <LoadingScreen />;
   }
 
   const totalValue = products.reduce((sum: number, product: any) => 
@@ -60,6 +69,13 @@ const DashboardPage = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <FinancialOverview 
+            currentMonthSales={currentMonthSales}
+            currentMonthExpenditures={currentMonthExpenditures}
+            previousMonthBalance={previousMonthBalance}
+            initialBalance={initialBalance}
+          />
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="Total Products"
