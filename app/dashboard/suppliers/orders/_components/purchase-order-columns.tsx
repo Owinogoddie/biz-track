@@ -54,6 +54,129 @@ export interface PurchaseOrder {
   }[]
 }
 
+// Extract PO Actions Component
+const PurchaseOrderActions = ({ row }: { row: any }) => {
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const po = row.original
+  const { toast } = useToast()
+  const { updatePurchaseOrder, removePurchaseOrder } = usePurchaseOrderStore()
+
+  const handleStatusUpdate = async (newStatus: POStatus) => {
+    const result = await updatePurchaseOrderStatus(po.id, newStatus)
+    if (result.success) {
+      updatePurchaseOrder(result.purchaseOrder)
+      toast({
+        title: "Success",
+        description: `Purchase order status updated to ${newStatus.toLowerCase()}`,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deletePurchaseOrder(po.id)
+    if (result.success) {
+      removePurchaseOrder(po.id)
+      toast({
+        title: "Success",
+        description: "Purchase order deleted successfully",
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      })
+    }
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+
+  const getAvailableStatusTransitions = (currentStatus: POStatus): POStatus[] => {
+    switch (currentStatus) {
+      case 'DRAFT':
+        return ['SENT']
+      case 'SENT':
+        return ['APPROVED', 'REJECTED']
+      case 'APPROVED':
+        return ['COMPLETED']
+      default:
+        return []
+    }
+  }
+
+  const availableTransitions = getAvailableStatusTransitions(po.status)
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+            Edit
+          </DropdownMenuItem>
+          {availableTransitions.map((status) => (
+            <DropdownMenuItem
+              key={status}
+              onClick={() => handleStatusUpdate(status)}
+            >
+              Update to {status.toLowerCase()}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {showEditModal && (
+        <EditPOModal
+          purchaseOrder={po}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the purchase order.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 export const columns: ColumnDef<PurchaseOrder>[] = [
   {
     id: "poNumber",
@@ -128,126 +251,6 @@ export const columns: ColumnDef<PurchaseOrder>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const po = row.original
-      const { toast } = useToast()
-      const { updatePurchaseOrder, removePurchaseOrder } = usePurchaseOrderStore()
-
-      const handleStatusUpdate = async (newStatus: POStatus) => {
-        const result = await updatePurchaseOrderStatus(po.id, newStatus)
-        if (result.success) {
-          updatePurchaseOrder(result.purchaseOrder)
-          toast({
-            title: "Success",
-            description: `Purchase order status updated to ${newStatus.toLowerCase()}`,
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: result.error,
-            variant: "destructive",
-          })
-        }
-      }
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        const result = await deletePurchaseOrder(po.id)
-        if (result.success) {
-          removePurchaseOrder(po.id)
-          toast({
-            title: "Success",
-            description: "Purchase order deleted successfully",
-          })
-        } else {
-          toast({
-            title: "Error",
-            description: result.error,
-            variant: "destructive",
-          })
-        }
-        setIsDeleting(false)
-        setShowDeleteDialog(false)
-      }
-
-      const getAvailableStatusTransitions = (currentStatus: POStatus): POStatus[] => {
-        switch (currentStatus) {
-          case 'DRAFT':
-            return ['SENT']
-          case 'SENT':
-            return ['APPROVED', 'REJECTED']
-          case 'APPROVED':
-            return ['COMPLETED']
-          default:
-            return []
-        }
-      }
-
-      const availableTransitions = getAvailableStatusTransitions(po.status)
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowEditModal(true)}>
-                Edit
-              </DropdownMenuItem>
-              {availableTransitions.map((status) => (
-                <DropdownMenuItem
-                  key={status}
-                  onClick={() => handleStatusUpdate(status)}
-                >
-                  Update to {status.toLowerCase()}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {showEditModal && (
-            <EditPOModal
-              purchaseOrder={po}
-              onClose={() => setShowEditModal(false)}
-            />
-          )}
-
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the purchase order.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => <PurchaseOrderActions row={row} />
   },
 ]

@@ -35,6 +35,115 @@ type InstallmentPlan = {
   product: { name: string }
 }
 
+// Extracted Actions Component
+const InstallmentPlanActions = ({ row }: { row: any }) => {
+  const router = useRouter()
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
+  const { removeInstallmentPlan, updateInstallmentPlan } = useInstallmentStore()
+
+  const refreshPlanData = async () => {
+    const result = await getInstallmentPlan(row.original.id)
+    if (result.success) {
+      updateInstallmentPlan(result.plan)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deleteInstallmentPlan(row.original.id)
+    
+    if (result.success) {
+      removeInstallmentPlan(row.original.id)
+      toast({
+        title: 'Plan deleted',
+        description: 'Installment plan has been deleted successfully.',
+      })
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      })
+    }
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+
+  const actions = [
+    {
+      label: 'View Details',
+      action: () => router.push(`/dashboard/installments/${row.original.id}`),
+    },
+    {
+      label: 'Edit Plan',
+      action: () => setShowEditModal(true)
+    },
+    {
+      label: 'Add Payment',
+      action: () => setShowPaymentModal(true)
+    },
+    {
+      label: 'Delete Plan',
+      action: () => setShowDeleteDialog(true),
+      variant: 'destructive' as const
+    }
+  ]
+
+  return (
+    <>
+      <DataTableRowActions row={row} actions={actions} />
+      
+      {showEditModal && (
+        <EditInstallmentModal
+          installmentPlan={row.original}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            refreshPlanData()
+            setShowEditModal(false)
+          }}
+        />
+      )}
+      
+      {showPaymentModal && (
+        <AddPaymentModal
+          installmentPlanId={row.original.id}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            refreshPlanData()
+            setShowPaymentModal(false)
+          }}
+        />
+      )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the installment plan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 export const columns: ColumnDef<InstallmentPlan>[] = [
   {
     accessorKey: 'customer.name',
@@ -98,112 +207,6 @@ export const columns: ColumnDef<InstallmentPlan>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const router = useRouter()
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showPaymentModal, setShowPaymentModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const { toast } = useToast()
-      const { removeInstallmentPlan, updateInstallmentPlan } = useInstallmentStore()
-
-      const refreshPlanData = async () => {
-        const result = await getInstallmentPlan(row.original.id)
-        if (result.success) {
-          updateInstallmentPlan(result.plan)
-        }
-      }
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        const result = await deleteInstallmentPlan(row.original.id)
-        
-        if (result.success) {
-          removeInstallmentPlan(row.original.id)
-          toast({
-            title: 'Plan deleted',
-            description: 'Installment plan has been deleted successfully.',
-          })
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: result.error,
-          })
-        }
-        setIsDeleting(false)
-        setShowDeleteDialog(false)
-      }
-
-      const actions = [
-        {
-          label: 'View Details',
-          action: () => router.push(`/dashboard/installments/${row.original.id}`),
-        },
-        {
-          label: 'Edit Plan',
-          action: () => setShowEditModal(true)
-        },
-        {
-          label: 'Add Payment',
-          action: () => setShowPaymentModal(true)
-        },
-        {
-          label: 'Delete Plan',
-          action: () => setShowDeleteDialog(true),
-          variant: 'destructive' as const
-        }
-      ]
-
-      return (
-        <>
-          <DataTableRowActions row={row} actions={actions} />
-          
-          {showEditModal && (
-            <EditInstallmentModal
-              installmentPlan={row.original}
-              onClose={() => setShowEditModal(false)}
-              onSuccess={() => {
-                refreshPlanData()
-                setShowEditModal(false)
-              }}
-            />
-          )}
-          
-          {showPaymentModal && (
-            <AddPaymentModal
-              installmentPlanId={row.original.id}
-              onClose={() => setShowPaymentModal(false)}
-              onSuccess={() => {
-                refreshPlanData()
-                setShowPaymentModal(false)
-              }}
-            />
-          )}
-
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the installment plan.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => <InstallmentPlanActions row={row} />
   },
 ]

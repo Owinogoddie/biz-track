@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { FundingSource } from '@prisma/client'
 import { Eye } from 'lucide-react'
@@ -9,11 +12,90 @@ import { useToast } from '@/hooks/use-toast'
 import { useFundingSourceStore } from '@/store/useFundingSourceStore'
 import { deleteFundingSource } from '@/app/actions/funding-source'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
-import { useState } from 'react'
 import { formatCurrency } from '@/lib/formatters'
+
+// Extracted Actions Component
+const FundingSourceActions = ({ row }: { row: any }) => {
+  const router = useRouter()
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
+  const { removeFundingSource } = useFundingSourceStore()
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deleteFundingSource(row.original.id)
+    
+    if (result.success) {
+      removeFundingSource(row.original.id)
+      toast({
+        title: 'Funding source deleted',
+        description: 'Funding source has been deleted successfully.',
+      })
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      })
+    }
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+
+  const actions = [
+    {
+      label: 'View Details',
+      action: () => router.push(`/dashboard/funding/${row.original.id}`),
+      icon: Eye
+    },
+    {
+      label: 'Edit',
+      action: () => setShowEditModal(true)
+    },
+    {
+      label: 'Delete',
+      action: () => setShowDeleteDialog(true),
+      variant: 'destructive' as const
+    }
+  ]
+
+  return (
+    <>
+      <DataTableRowActions row={row} actions={actions} />
+      {showEditModal && (
+        <EditFundingSourceModal
+          fundingSource={row.original}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this funding source.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
 
 export const columns: ColumnDef<FundingSource>[] = [
   {
@@ -61,84 +143,6 @@ export const columns: ColumnDef<FundingSource>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const router = useRouter()
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const { toast } = useToast()
-      const { removeFundingSource } = useFundingSourceStore()
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        const result = await deleteFundingSource(row.original.id)
-        
-        if (result.success) {
-          removeFundingSource(row.original.id)
-          toast({
-            title: 'Funding source deleted',
-            description: 'Funding source has been deleted successfully.',
-          })
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: result.error,
-          })
-        }
-        setIsDeleting(false)
-        setShowDeleteDialog(false)
-      }
-
-      const actions = [
-        {
-          label: 'View Details',
-          action: () => router.push(`/dashboard/funding/${row.original.id}`),
-          icon: Eye
-        },
-        {
-          label: 'Edit',
-          action: () => setShowEditModal(true)
-        },
-        {
-          label: 'Delete',
-          action: () => setShowDeleteDialog(true),
-          variant: 'destructive' as const
-        }
-      ]
-
-      return (
-        <>
-          <DataTableRowActions row={row} actions={actions} />
-          {showEditModal && (
-            <EditFundingSourceModal
-              fundingSource={row.original}
-              onClose={() => setShowEditModal(false)}
-            />
-          )}
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete this funding source.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => <FundingSourceActions row={row} />
   },
 ]

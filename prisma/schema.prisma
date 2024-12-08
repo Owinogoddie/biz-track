@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -60,7 +61,13 @@ model OAuthAccount {
 
   @@id([provider, providerUserId])
 }
-
+enum BusinessType {
+  PRODUCT      // Default - For retail, wholesale, manufacturing
+  SERVICE      // For service providers like consultants, salons
+  SUBSCRIPTION // For gyms, membership clubs
+  DISTRIBUTION // For distributors to schools, hotels etc
+  HYBRID       // For businesses that combine multiple types
+}
 // models for business system
 model Business {
   id            String         @id @default(cuid())
@@ -68,6 +75,7 @@ model Business {
   description   String?
   logo          String?
   domain        String?        @unique
+  businessType  BusinessType   @default(PRODUCT) 
   
   // Business details
   address       String?
@@ -90,6 +98,19 @@ model Business {
   productions   Production[]
   subscription  Subscription?
   sales         Sale[]
+    // Service related - optional based on business type
+  services      Service[]           // New relation
+  appointments  Appointment[]       // New relation
+  
+  // Subscription related - optional based on business type
+  membershipPlans MembershipPlan[] // New relation
+  members         Member[]         // New relation
+  
+  // Distribution related - optional based on business type
+  distributionClients DistributionClient[] // New relation
+  deliveryRoutes     DeliveryRoute[]      // New relation
+  deliverySchedules  DeliverySchedule[]   // New relation
+  deliveryOrders DeliveryOrder[]
   debts Debt[]
 expenditures Expenditure[]
   installmentPlans InstallmentPlan[] 
@@ -118,6 +139,7 @@ model BusinessUser {
   @@unique([businessId, userId])
 }
 
+
 model Product {
   id          String     @id @default(cuid())
   name        String
@@ -140,6 +162,8 @@ model Product {
   
   // Production relations
   productions Production[] 
+
+  deliveryOrderItems DeliveryOrderItem[]
   
   installmentPlans InstallmentPlan[] 
   createdAt   DateTime   @default(now())
@@ -155,12 +179,275 @@ model Category {
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id])
   products    Product[] // Changed to one-to-many relation
+  services Service[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@unique([businessId, name])
   @@index([businessId])
 }
+
+// New model for services
+model Service {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  duration    Int          // in minutes
+  businessId  String
+  categoryId  String?      // Optional category
+  
+  business    Business     @relation(fields: [businessId], references: [id])
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  appointments Appointment[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([businessId])
+  @@index([categoryId])
+}
+
+// New model for appointments
+model Appointment {
+  id          String       @id @default(cuid())
+  serviceId   String
+  customerId  String
+  businessId  String
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  notes       String?
+  
+  service     Service      @relation(fields: [serviceId], references: [id])
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  business    Business     @relation(fields: [businessId], references: [id])
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([businessId])
+  @@index([serviceId])
+  @@index([customerId])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// New model for membership plans
+model MembershipPlan {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  duration    Int          // in days
+  businessId  String
+  features    String[]     // Array of features included in the plan
+  
+  business    Business     @relation(fields: [businessId], references: [id])
+  members     Member[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([businessId])
+}
+
+// New model for members
+model Member {
+  id              String         @id @default(cuid())
+  customerId      String
+  businessId      String
+  membershipPlanId String
+  startDate       DateTime
+  endDate         DateTime
+  status          MembershipStatus @default(ACTIVE)
+  
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  business        Business       @relation(fields: [businessId], references: [id])
+  membershipPlan  MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([membershipPlanId])
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+}
+
+// New models for distribution
+// Distribution Models
+model DistributionClient {
+  id            String       @id @default(cuid())
+  name          String
+  type          ClientType   
+  businessId    String
+  address       String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  
+  business      Business     @relation(fields: [businessId], references: [id])
+  deliveryRoutes DeliveryRoute[]
+  schedules     DeliverySchedule[]
+  orders        DeliveryOrder[]
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([businessId])
+}
+
+enum ClientType {
+  SCHOOL
+  HOTEL
+  RESTAURANT
+  RETAIL_STORE
+  OTHER
+}
+
+model DeliveryRoute {
+  id            String       @id @default(cuid())
+  name          String
+  businessId    String
+  description   String?
+  
+  business      Business     @relation(fields: [businessId], references: [id])
+  clients       DistributionClient[]
+  schedules     DeliverySchedule[]
+  orders        DeliveryOrder[]
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([businessId])
+}
+
+model DeliverySchedule {
+  id            String       @id @default(cuid())
+  businessId    String
+  clientId      String
+  routeId       String
+  frequency     Frequency    
+  dayOfWeek     Int?        
+  dayOfMonth    Int?        
+  timeWindow    String?     
+  
+  business      Business     @relation(fields: [businessId], references: [id])
+  client        DistributionClient @relation(fields: [clientId], references: [id])
+  route         DeliveryRoute @relation(fields: [routeId], references: [id])
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+  @@index([routeId])
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+model DeliveryOrder {
+  id            String       @id @default(cuid())
+  businessId    String
+  clientId      String
+  routeId       String
+  scheduledDate DateTime
+  status        DeliveryStatus
+  notes         String?
+  
+  business      Business     @relation(fields: [businessId], references: [id])
+  client        DistributionClient @relation(fields: [clientId], references: [id])
+  route         DeliveryRoute @relation(fields: [routeId], references: [id])
+  items         DeliveryOrderItem[]
+  transaction   DeliveryTransaction?
+  payment       Payment?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+  @@index([routeId])
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+model DeliveryOrderItem {
+  id          String       @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  unitPrice   Float
+  
+  order       DeliveryOrder @relation(fields: [orderId], references: [id])
+  product     Product      @relation(fields: [productId], references: [id])
+  
+  deliveredItems DeliveredItem[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model DeliveryTransaction {
+  id            String       @id @default(cuid())
+  orderId       String      @unique
+  deliveryDate  DateTime
+  status        TransactionStatus
+  notes         String?
+  
+  order         DeliveryOrder @relation(fields: [orderId], references: [id])
+  deliveredItems DeliveredItem[]
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([orderId])
+}
+
+model DeliveredItem {
+  id              String       @id @default(cuid())
+  transactionId   String
+  orderItemId     String
+  quantityDelivered Int
+  
+  transaction     DeliveryTransaction @relation(fields: [transactionId], references: [id])
+  orderItem       DeliveryOrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([transactionId])
+  @@index([orderItemId])
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  PARTIAL
+  CANCELLED
+}
+
 
 model Sale {
   id            String         @id @default(cuid())
@@ -448,7 +735,8 @@ model Customer {
   transactions Transaction[]
   debts       Debt[]
   installmentPlans InstallmentPlan[] 
-  
+  appointments  Appointment[]
+  membership    Member[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
@@ -675,14 +963,23 @@ model Payment {
   amount        Float
   method        PaymentMethod
   reference     String?
+  paymentStatus PaymentStatus @default(PAID)
   
+  orderId       String      @unique
+  order         DeliveryOrder @relation(fields: [orderId], references: [id])
   transactionId String
   transaction   Transaction   @relation(fields: [transactionId], references: [id])
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
-
+enum PaymentStatus {
+  PAID
+  PENDING
+  PARTIAL
+  OVERDUE
+  CANCELLED
+}
 model Debt {
   id            String      @id @default(cuid())
   amount        Float
@@ -745,13 +1042,6 @@ enum BusinessRole {
   STAFF
 }
 
-
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-}
 
 enum PaymentMethod {
   CASH

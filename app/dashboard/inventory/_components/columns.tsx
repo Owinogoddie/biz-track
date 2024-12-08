@@ -38,6 +38,103 @@ const getStatusColor = (status: MaintenanceStatus) => {
   }
 }
 
+// Extracted Actions Component
+const InventoryAssetActions = ({ row }: { row: any }) => {
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
+  const { removeAsset } = useInventoryStore()
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const result = await deleteAsset(row.original.id)
+      
+      if (result.success) {
+        removeAsset(row.original.id)
+        
+        toast({
+          title: 'Asset Deleted',
+          description: 'The asset has been successfully removed.',
+          variant: 'default'
+        })
+      } else {
+        toast({
+          title: 'Deletion Failed',
+          description: result.error || 'Unable to delete the asset',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
+  const actions = [
+    {
+      label: 'Edit',
+      action: () => setShowEditModal(true)
+    },
+    {
+      label: 'Log Maintenance',
+      action: () => setShowMaintenanceModal(true)
+    },
+    {
+      label: 'Delete',
+      action: () => setShowDeleteDialog(true),
+      variant: 'destructive' as const
+    }
+  ]
+
+  return (
+    <>
+      <DataTableRowActions row={row} actions={actions} />
+      {showMaintenanceModal && (
+        <MaintenanceLogModal
+          asset={row.original}
+          onClose={() => setShowMaintenanceModal(false)}
+        />
+      )}
+      {showEditModal && (
+        <EditAssetModal
+          asset={row.original}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the asset.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 export const columns: ColumnDef<InventoryAsset>[] = [
   {
     accessorKey: 'name',
@@ -91,104 +188,6 @@ export const columns: ColumnDef<InventoryAsset>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const { toast } = useToast()
-      const { removeAsset } = useInventoryStore()
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        try {
-          const result = await deleteAsset(row.original.id)
-          
-          if (result.success) {
-            // Remove the asset from the local state
-            removeAsset(row.original.id)
-            
-            // Show success toast
-            toast({
-              title: 'Asset Deleted',
-              description: 'The asset has been successfully removed.',
-              variant: 'default'
-            })
-          } else {
-            // Show error toast
-            toast({
-              title: 'Deletion Failed',
-              description: result.error || 'Unable to delete the asset',
-              variant: 'destructive'
-            })
-          }
-        } catch (error) {
-          // Handle any unexpected errors
-          toast({
-            title: 'Error',
-            description: 'An unexpected error occurred',
-            variant: 'destructive'
-          })
-        } finally {
-          setIsDeleting(false)
-          setShowDeleteDialog(false)
-        }
-      }
-
-      const actions = [
-        {
-          label: 'Edit',
-          action: () => setShowEditModal(true)
-        },
-        {
-          label: 'Log Maintenance',
-          action: () => setShowMaintenanceModal(true)
-        },
-        {
-          label: 'Delete',
-          action: () => setShowDeleteDialog(true),
-          variant: 'destructive' as const
-        }
-      ]
-
-      return (
-        <>
-          <DataTableRowActions row={row} actions={actions} />
-          {showMaintenanceModal && (
-            <MaintenanceLogModal
-              asset={row.original}
-              onClose={() => setShowMaintenanceModal(false)}
-            />
-          )}
-          {showEditModal && (
-            <EditAssetModal
-              asset={row.original}
-              onClose={() => setShowEditModal(false)}
-            />
-          )}
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the asset.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => <InventoryAssetActions row={row} />
   },
 ]

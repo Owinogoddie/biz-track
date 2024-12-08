@@ -7,6 +7,27 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 
+// Extract the actions cell into a proper React component
+const SupplierContractActions = ({ row }: { row: any }) => {
+  const { toast } = useToast()
+  
+  const handleViewDetails = () => {
+    toast({
+      title: 'View Details',
+      description: 'This feature is coming soon!',
+    })
+  }
+
+  const actions = [
+    {
+      label: 'View Details',
+      action: handleViewDetails
+    }
+  ]
+
+  return <DataTableRowActions row={row} actions={actions} />
+}
+
 export const columns: ColumnDef<SupplierContract>[] = [
   {
     accessorKey: 'title',
@@ -67,24 +88,6 @@ export const columns: ColumnDef<SupplierContract>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const { toast } = useToast()
-      
-      const handleViewDetails = () => {
-        toast({
-          title: 'View Details',
-          description: 'This feature is coming soon!',
-        })
-      }
-
-      const actions = [
-        {
-          label: 'View Details',
-          action: handleViewDetails
-        }
-      ]
-
-      return <DataTableRowActions row={row} actions={actions} />
-    },
+    cell: ({ row }) => <SupplierContractActions row={row} />
   },
 ]

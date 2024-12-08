@@ -24,6 +24,8 @@ import {
   IconUserSearch,
   IconUserPlus,
   IconCreditCard,
+  IconCalendarEvent,
+  IconTool,
 } from '@tabler/icons-react';
 import { DollarSign, Receipt, ChartBar, CreditCard } from "lucide-react";
 export interface NavLink {
@@ -93,6 +95,58 @@ export const sidelinks: SideLink[] = [
         href: '/dashboard/categories',
         icon: <IconCategory size={18} />,
       },
+    ]
+  },
+  {
+    title: 'Services',
+    label: '',
+    href: '/dashboard/services',
+    icon: <IconTool size={18} />,
+    sub: [
+      {
+        title: 'Service List',
+        label: '',
+        href: '/dashboard/services',
+        icon: <IconTool size={18} />,
+      },
+      // {
+      //   title: 'Service Categories',
+      //   label: '',
+      //   href: '/dashboard/services/categories',
+      //   icon: <IconCategory size={18} />,
+      // },
+      // {
+      //   title: 'Pricing',
+      //   label: '',
+      //   href: '/dashboard/services/pricing',
+      //   icon: <DollarSign size={18} />,
+      // },
+    ]
+  },
+  {
+    title: 'Appointments',
+    label: '',
+    href: '/dashboard/appointments',
+    icon: <IconCalendarEvent size={18} />,
+    sub: [
+      {
+        title: 'Calendar',
+        label: '',
+        href: '/dashboard/appointments',
+        icon: <IconCalendarEvent size={18} />,
+      },
+      // {
+      //   title: 'Upcoming',
+      //   label: '',
+      //   href: '/dashboard/appointments/upcoming',
+      //   icon: <IconCalendarEvent size={18} />,
+      // },
+      // {
+      //   title: 'History',
+      //   label: '',
+      //   href: '/dashboard/appointments/history',
+      //   icon: <IconReceipt size={18} />,
+      // },
     ]
   },
   {

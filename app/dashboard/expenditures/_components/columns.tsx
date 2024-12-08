@@ -37,6 +37,95 @@ interface GetColumnsProps {
   expenditures: ExpenditureWithFundingSource[]
 }
 
+// Extract ExpenditureActions Component
+const ExpenditureActions = ({ 
+  row, 
+  totalSales, 
+  expenditures 
+}: { 
+  row: any, 
+  totalSales: number, 
+  expenditures: ExpenditureWithFundingSource[] 
+}) => {
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
+  const { removeExpenditure } = useExpenditureStore()
+  
+  const totalExpenses = expenditures.reduce((sum, exp) => sum + exp.amount, 0)
+  const availableBalance = totalSales - totalExpenses + row.original.amount
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deleteExpenditure(row.original.id)
+    
+    if (result.success) {
+      removeExpenditure(row.original.id)
+      toast({
+        title: "Expenditure deleted",
+        description: "Expenditure has been deleted successfully.",
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.error,
+      })
+    }
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+
+  const actions = [
+    {
+      label: "Edit",
+      action: () => setShowEditModal(true)
+    },
+    {
+      label: "Delete",
+      action: () => setShowDeleteDialog(true),
+      variant: "destructive" as const
+    }
+  ]
+
+  return (
+    <>
+      <DataTableRowActions row={row} actions={actions} />
+      {showEditModal && (
+        <ExpenditureFormModal 
+          expenditure={row.original}
+          availableBalance={availableBalance}
+          sales={totalSales}
+        >
+          <span />
+        </ExpenditureFormModal>
+      )}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the expenditure.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): ColumnDef<ExpenditureWithFundingSource>[] => [
   {
     accessorKey: "date",
@@ -96,84 +185,12 @@ export const getColumns = ({ totalSales, expenditures }: GetColumnsProps): Colum
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const { toast } = useToast()
-      const { removeExpenditure } = useExpenditureStore()
-      
-      const totalExpenses = expenditures.reduce((sum, exp) => sum + exp.amount, 0)
-      const availableBalance = totalSales - totalExpenses + row.original.amount
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        const result = await deleteExpenditure(row.original.id)
-        
-        if (result.success) {
-          removeExpenditure(row.original.id)
-          toast({
-            title: "Expenditure deleted",
-            description: "Expenditure has been deleted successfully.",
-          })
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.error,
-          })
-        }
-        setIsDeleting(false)
-        setShowDeleteDialog(false)
-      }
-
-      const actions = [
-        {
-          label: "Edit",
-          action: () => setShowEditModal(true)
-        },
-        {
-          label: "Delete",
-          action: () => setShowDeleteDialog(true),
-          variant: "destructive" as const
-        }
-      ]
-
-      return (
-        <>
-          <DataTableRowActions row={row} actions={actions} />
-          {showEditModal && (
-            <ExpenditureFormModal 
-              expenditure={row.original}
-              availableBalance={availableBalance}
-              sales={totalSales}
-            >
-              <span />
-            </ExpenditureFormModal>
-          )}
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the expenditure.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => (
+      <ExpenditureActions 
+        row={row} 
+        totalSales={totalSales} 
+        expenditures={expenditures} 
+      />
+    ),
   },
 ]

@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
-import { Worker, PaymentPeriod } from '@prisma/client'
 import { DataTableColumnHeader } from '@/components/ui/data-table-column-header'
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions'
-import { EditWorkerModal } from './edit-worker-modal'
+import { EditServiceModal } from './edit-service-modal'
 import { useToast } from '@/hooks/use-toast'
-import { useWorkerStore } from '@/store/useWorkerStore'
-import { deleteWorker } from '@/app/actions/worker'
+import { useServiceStore } from '@/store/useServiceStore'
+import { deleteService } from '@/app/actions/service'
+import { Service } from '@/types/service'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,35 +19,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
 
-const WorkerActions = ({ row }: { row: any }) => {
+const ServiceActions = ({ row }: { row: any }) => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
-  const { removeWorker } = useWorkerStore()
+  const { removeService } = useServiceStore()
 
   const handleDelete = async () => {
     setIsDeleting(true)
-    try {
-      const result = await deleteWorker(row.original.id)
-      
-      if (result.success) {
-        removeWorker(row.original.id)
-        toast({
-          title: 'Worker deleted',
-          description: 'Worker has been deleted successfully.',
-        })
-      } else {
-        throw new Error(result.error || 'Failed to delete worker')
-      }
-    } catch (error: any) {
+    const result = await deleteService(row.original.id)
+    
+    if (result.success) {
+      removeService(row.original.id)
+      toast({
+        title: 'Service deleted',
+        description: 'Service has been deleted successfully.',
+      })
+    } else {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: result.error,
       })
     }
     setIsDeleting(false)
@@ -70,8 +65,8 @@ const WorkerActions = ({ row }: { row: any }) => {
     <>
       <DataTableRowActions row={row} actions={actions} />
       {showEditModal && (
-        <EditWorkerModal
-          worker={row.original}
+        <EditServiceModal
+          service={row.original}
           onClose={() => setShowEditModal(false)}
         />
       )}
@@ -80,7 +75,7 @@ const WorkerActions = ({ row }: { row: any }) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the worker record.
+              This action cannot be undone. This will permanently delete the service.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -100,59 +95,45 @@ const WorkerActions = ({ row }: { row: any }) => {
   )
 }
 
-export const columns: ColumnDef<Worker>[] = [
+export const columns: ColumnDef<Service>[] = [
   {
-    id: 'name',
-    accessorFn: (row) => `${row.firstName} ${row.lastName}`,
+    accessorKey: 'name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
   },
   {
-    id: 'email',
-    accessorKey: 'email',
+    accessorKey: 'price',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Email" />
-    ),
-  },
-  {
-    id: 'role',
-    accessorKey: 'role',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Role" />
-    ),
-  },
-  {
-    id: 'paymentPeriod',
-    accessorKey: 'paymentPeriod',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Payment Period" />
+      <DataTableColumnHeader column={column} title="Price" />
     ),
     cell: ({ row }) => {
-      const period = row.getValue('paymentPeriod') as PaymentPeriod
-      return (
-        <Badge variant="secondary">
-          {period.toLowerCase()}
-        </Badge>
-      )
+      const price = parseFloat(row.getValue('price'))
+      const formatted = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'KES',
+      }).format(price)
+      return <div>{formatted}</div>
     },
   },
   {
-    id: 'rate',
+    accessorKey: 'duration',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Rate" />
+      <DataTableColumnHeader column={column} title="Duration (min)" />
+    ),
+  },
+  {
+    accessorKey: 'category',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Category" />
     ),
     cell: ({ row }) => {
-      const worker = row.original
-      const rate = worker.paymentPeriod === PaymentPeriod.HOURLY ? worker.hourlyRate :
-                  worker.paymentPeriod === PaymentPeriod.DAILY ? worker.dailyRate :
-                  worker.monthlyRate
-      
-      return rate ? `$${rate}/${worker.paymentPeriod.toLowerCase().slice(0, -2)}` : '-'
+      const category = row.original.category
+      return <div>{category?.name || 'No category'}</div>
     },
   },
   {
     id: 'actions',
-    cell: ({ row }) => <WorkerActions row={row} />
+    cell: ({ row }) => <ServiceActions row={row} />
   },
 ]
