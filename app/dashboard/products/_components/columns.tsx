@@ -28,6 +28,81 @@ type ProductWithCategory = Product & {
   } | null;
 }
 
+// Extract the actions cell into a proper React component
+const ProductActions = ({ row }: { row: any }) => {
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
+  const { removeProduct } = useProductStore()
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const result = await deleteProduct(row.original.id)
+    
+    if (result.success) {
+      removeProduct(row.original.id)
+      toast({
+        title: 'Product deleted',
+        description: 'Product has been deleted successfully.',
+      })
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      })
+    }
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
+  }
+
+  const actions = [
+    {
+      label: 'Edit',
+      action: () => setShowEditModal(true)
+    },
+    {
+      label: 'Delete',
+      action: () => setShowDeleteDialog(true),
+      variant: 'destructive' as const
+    }
+  ]
+
+  return (
+    <>
+      <DataTableRowActions row={row} actions={actions} />
+      {showEditModal && (
+        <EditProductModal
+          product={row.original}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 export const columns: ColumnDef<ProductWithCategory, unknown>[] = [
   {
     accessorKey: 'name',
@@ -73,78 +148,6 @@ export const columns: ColumnDef<ProductWithCategory, unknown>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const [showEditModal, setShowEditModal] = useState(false)
-      const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-      const [isDeleting, setIsDeleting] = useState(false)
-      const { toast } = useToast()
-      const { removeProduct } = useProductStore()
-
-      const handleDelete = async () => {
-        setIsDeleting(true)
-        const result = await deleteProduct(row.original.id)
-        
-        if (result.success) {
-          removeProduct(row.original.id)
-          toast({
-            title: 'Product deleted',
-            description: 'Product has been deleted successfully.',
-          })
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: result.error,
-          })
-        }
-        setIsDeleting(false)
-        setShowDeleteDialog(false)
-      }
-
-      const actions = [
-        {
-          label: 'Edit',
-          action: () => setShowEditModal(true)
-        },
-        {
-          label: 'Delete',
-          action: () => setShowDeleteDialog(true),
-          variant: 'destructive' as const
-        }
-      ]
-
-      return (
-        <>
-          <DataTableRowActions row={row} actions={actions} />
-          {showEditModal && (
-            <EditProductModal
-              product={row.original}
-              onClose={() => setShowEditModal(false)}
-            />
-          )}
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the product.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
-    },
+    cell: ({ row }) => <ProductActions row={row} />
   },
 ]

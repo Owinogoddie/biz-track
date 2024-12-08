@@ -24,8 +24,11 @@ import {
   IconUserSearch,
   IconUserPlus,
   IconCreditCard,
+  IconClipboardList,
+  IconBuildingWarehouse,
+  IconTruckDelivery,
 } from '@tabler/icons-react';
-import { DollarSign, Receipt, ChartBar, CreditCard } from "lucide-react";
+import { DollarSign, Receipt, ChartBar, CreditCard, Building, Users, BarChart, Map } from "lucide-react";
 export interface NavLink {
   title: string;
   label?: string;
@@ -93,6 +96,43 @@ export const sidelinks: SideLink[] = [
         href: '/dashboard/categories',
         icon: <IconCategory size={18} />,
       },
+    ]
+  },
+  {
+    title: 'Supplies',
+    href: '/dashboard/supplies',
+    icon: <IconTruckDelivery size={18} />,
+    sub: [
+      {
+        title: 'Overview',
+        href: '/dashboard/distribution',
+        icon: <BarChart size={18} />,
+      },
+      {
+        title: 'Inventory',
+        href: '/dashboard/distribution/inventory',
+        icon: <IconBuildingWarehouse size={18} />,
+      },
+      {
+        title: 'Orders',
+        href: '/dashboard/distribution/orders',
+        icon: <IconClipboardList size={18} />,
+      },
+      {
+        title: 'Suppliers',
+        href: '/dashboard/distribution/suppliers',
+        icon: <Users size={18} />,
+      },
+      // {
+      //   title: 'Distribution Centers',
+      //   href: '/dashboard/supplies/centers',
+      //   icon: <Building size={18} />,
+      // },
+      {
+        title: 'Routes',
+        href: '/dashboard/distribution/routes',
+        icon: <Map size={18} />,
+      }
     ]
   },
   {

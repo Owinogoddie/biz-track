@@ -1,18 +1,20 @@
-"use server"
+'use server'
 
 import prisma from '@/lib/prisma'
 import { getUserAction } from '@/app/actions/auth'
-import { FundingType, TransactionType } from '@prisma/client'
+import { BusinessType, FundingType, TransactionType } from '@prisma/client'
 
 interface CreateBusinessInput {
   name: string
+  type: BusinessType
   description?: string
   email?: string
   phone?: string
   website?: string
   address?: string
   openingBalance: number
-  openingBalanceSource?: FundingType
+  primaryColor?: string
+  secondaryColor?: string
 }
 
 export async function createBusiness(data: CreateBusinessInput) {
@@ -25,9 +27,17 @@ export async function createBusiness(data: CreateBusinessInput) {
 
     const business = await prisma.business.create({
       data: {
-        ...data,
+        name: data.name,
+        businessType: data.type,
+        description: data.description,
+        email: data.email,
+        phone: data.phone,
+        website: data.website,
+        address: data.address,
+        openingBalance: data.openingBalance,
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor,
         ownerId: userResult.user.id,
-        openingBalance: data.openingBalance, // Set the opening balance initially
       },
     });
 
@@ -95,7 +105,6 @@ export async function getBusinesses() {
   }
 }
 
-
 export async function deleteBusiness(businessId: string) {
   try {
     const userResult = await getUserAction();
@@ -104,7 +113,6 @@ export async function deleteBusiness(businessId: string) {
       return { success: false, error: 'User not authenticated' };
     }
 
-    // Check if the user owns the business
     const business = await prisma.business.findFirst({
       where: {
         id: businessId,
@@ -116,8 +124,22 @@ export async function deleteBusiness(businessId: string) {
       return { success: false, error: 'Business not found or you do not have permission' };
     }
 
-    // Perform a transaction to delete related records and the business
+    // Delete all related records in the correct order to maintain referential integrity
     await prisma.$transaction([
+      // Delete service-related records
+      prisma.appointment.deleteMany({ where: { businessId } }),
+      prisma.service.deleteMany({ where: { businessId } }),
+
+      // Delete subscription-related records
+      prisma.member.deleteMany({ where: { businessId } }),
+      prisma.membershipPlan.deleteMany({ where: { businessId } }),
+
+      // Delete distribution-related records
+      prisma.deliverySchedule.deleteMany({ where: { businessId } }),
+      prisma.deliveryRoute.deleteMany({ where: { businessId } }),
+      prisma.distributionClient.deleteMany({ where: { businessId } }),
+
+      // Delete common business records
       prisma.fundingSource.deleteMany({ where: { businessId } }),
       prisma.transaction.deleteMany({ where: { businessId } }),
       prisma.businessUser.deleteMany({ where: { businessId } }),
@@ -128,13 +150,15 @@ export async function deleteBusiness(businessId: string) {
       prisma.category.deleteMany({ where: { businessId } }),
       prisma.supplier.deleteMany({ where: { businessId } }),
       prisma.customer.deleteMany({ where: { businessId } }),
-      prisma.production.deleteMany({ where: { businessId } }),
       prisma.subscription.deleteMany({ where: { businessId } }),
-      prisma.debt.deleteMany({ where: { businessId } }),
       prisma.expenditure.deleteMany({ where: { businessId } }),
+      prisma.debt.deleteMany({ where: { businessId } }),
       prisma.installmentPlan.deleteMany({ where: { businessId } }),
       prisma.purchaseOrder.deleteMany({ where: { businessId } }),
       prisma.supplierContract.deleteMany({ where: { businessId } }),
+      prisma.inventoryAsset.deleteMany({ where: { businessId } }),
+
+      // Finally delete the business itself
       prisma.business.delete({ where: { id: businessId } }),
     ]);
 
